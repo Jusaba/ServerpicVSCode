@@ -1,0 +1,7 @@
+{
+    "Plataformas":[
+        {"name":"arduino"},
+        {"name":"esp8266"},
+        {"name":"esp32"}
+    ]
+}

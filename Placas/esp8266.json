@@ -1,0 +1,111 @@
+{
+	"version": "0.1.0",
+	"Boards": [
+		{
+			"name": "ESP01",
+			"configuracion":
+			{  
+			  "fqbn" : "esp8266:esp8266:generic",
+			  "xtal":"80",
+			  "CrystalFreq":"26",
+			  "lvl":"None____",
+			  "dbg":"Disabled",
+			  "wipe":"none",
+			  "sdk":"nonosdk221",
+			  "exception":"disabled",
+			  "FlashFreq":"40",
+			  "FlashMode":"dout",
+			  "eesz":"1M",
+			  "ip":"lm2f",
+			  "ResetMethod":"ck",
+			  "ssl":"all",
+			  "baud":"115200",
+			  "vt":"flash"
+			}
+			
+		},
+        {
+			"name": "ESP01_4M",
+			"configuracion":
+			{  
+			  "fqbn" : "esp8266:esp8266:generic",
+			  "xtal":"80",
+			  "CrystalFreq":"26",
+			  "lvl":"None____",
+			  "dbg":"Disabled",
+			  "wipe":"none",
+			  "sdk":"nonosdk221",
+			  "exception":"disabled",
+			  "FlashFreq":"40",
+			  "FlashMode":"dout",
+			  "eesz":"4M",
+			  "ip":"lm2f",
+			  "ResetMethod":"ck",
+			  "ssl":"all",
+			  "baud":"115200",
+			  "vt":"flash"
+			}
+			
+		},
+        {
+			"name": "ESP11",
+			"configuracion":
+			{  
+			  "fqbn" : "esp8266:esp8266:generic",
+			  "xtal":"80",
+			  "CrystalFreq":"26",
+			  "lvl":"None____",
+			  "dbg":"Disabled",
+			  "wipe":"none",
+			  "sdk":"nonosdk221",
+			  "exception":"disabled",
+			  "FlashFreq":"40",
+			  "FlashMode":"dout",
+			  "eesz":"1M",
+			  "ip":"lm2f",
+			  "ResetMethod":"ck",
+			  "ssl":"all",
+			  "baud":"115200",
+			  "vt":"flash"
+			}
+			
+		},
+        {
+			"name": "Nodemcu",
+			"configuracion":
+			{  
+			  "fqbn" : "esp8266:esp8266:nodemcu",
+			  "xtal":"80",
+			  "lvl":"None____",
+			  "dbg":"Disabled",
+			  "wipe":"none",
+			  "exception":"disabled",
+			  "eesz":"4M",
+			  "ip":"lm2f",
+			  "ssl":"all",
+			  "baud":"115200",
+			  "vt":"flash"
+			}
+			
+		},
+        {
+			"name": "Nodemcuv2",
+			"configuracion":
+			{  
+			  "fqbn" : "esp8266:esp8266:nodemcu",
+			  "xtal":"80",
+			  "lvl":"None____",
+			  "dbg":"Disabled",
+			  "wipe":"none",
+			  "exception":"disabled",
+			  "eesz":"4M",
+			  "ip":"lm2f",
+			  "ssl":"all",
+			  "baud":"115200",
+			  "vt":"flash"
+			}
+			
+		}                                                
+	
+	]
+}
