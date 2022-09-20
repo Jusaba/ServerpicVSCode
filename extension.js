@@ -1,3 +1,4 @@
+cUsuario = 'jsbpu';
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const { window } = require("vscode")
@@ -7,8 +8,8 @@ const fs = require('fs');
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
-const cPathExtension = "C:\\Users\\julian\\.vscode\\extensions\\serverpic"
-const DirectorioPackages = "C:\\Users\\julian\\AppData\\Local\\Arduino15\\packages";
+const cPathExtension = `C:\\Users\\${cUsuario}\\.vscode\\extensions\\serverpic`
+const DirectorioPackages = `C:\\Users\\${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
 
 // this method is called when your extension is activated
@@ -132,7 +133,7 @@ function activate(context) {
 
 
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
-		const FolderExtension = "C:\\Users\\Julian\\.vscode\\extensions\\serverpic";
+		const FolderExtension = `C:\\Users\\${cUsuario}\\.vscode\\extensions\\serverpic`;
 		const newReactFolder = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
 		const Placa = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
 
