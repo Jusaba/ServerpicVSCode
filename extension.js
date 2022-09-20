@@ -2,13 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 const { window } = require("vscode")
 const vscode = require("vscode")
-const { execSync } = require("child_process")
-const path = require("path")
-const { readFile } = require("fs/promises")
 const fs = require('fs');
-const { isConstructorDeclaration } = require("typescript")
-const { homedir } = require("os")
-const { json } = require("stream/consumers")
+//const { homedir } = require("os");
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
@@ -92,33 +87,35 @@ async function ModeloPlataforma(cPlataforma) {
 	const quickPick = await vscode.window.showQuickPick(aModelos, { canPickMany: false, placeHolder: 'Seleccionar modelo' });
 	//Añadimos al array de salida el modelo de chip
 	aSalida.push(quickPick);
-console.log(quickPick);	
 	//Recorremos el json con las chip  
 	for (var nPosicion in oBoards.Boards) {
 		//cuando encontramos el bloque correpondiente al modelo seleccionado
 		if (oBoards.Boards[nPosicion].name == quickPick) {
+			let oJsonConfiguracion = oBoards.Boards[nPosicion].configuracion;
+
 			//Añadimos al arrau de salida el fqbn
 			aSalida.push(oBoards.Boards[nPosicion].configuracion.fqbn);
-console.log(oBoards.Boards[nPosicion].configuracion.fqbn);			
 			//generamos la variable configuracion con todos los parametros de configuracion para la compilacion
-			let cConfiguracion = `xtal=${oBoards.Boards[nPosicion].configuracion.xtal},`;
-			cConfiguracion = cConfiguracion +`vt=${oBoards.Boards[nPosicion].configuracion.vt},`;
-			cConfiguracion = cConfiguracion + `exception=${oBoards.Boards[nPosicion].configuracion.exception},`;
-			cConfiguracion = cConfiguracion + `ssl=${oBoards.Boards[nPosicion].configuracion.ssl},`;
-			cConfiguracion = cConfiguracion + `ResetMethod=${oBoards.Boards[nPosicion].configuracion.ResetMethod},`;
-			cConfiguracion = cConfiguracion + `CrystalFreq=${oBoards.Boards[nPosicion].configuracion.CrystalFreq},`;
-			cConfiguracion = cConfiguracion + `FlashFreq=${oBoards.Boards[nPosicion].configuracion.FlashFreq},`;
-			cConfiguracion = cConfiguracion + `FlashMode=${oBoards.Boards[nPosicion].configuracion.FlashMode},`;
-			cConfiguracion = cConfiguracion + `eesz=${oBoards.Boards[nPosicion].configuracion.eesz},`;
-			cConfiguracion = cConfiguracion + `sdk=${oBoards.Boards[nPosicion].configuracion.sdk},`;
-			cConfiguracion = cConfiguracion + `ip=${oBoards.Boards[nPosicion].configuracion.ip},`;
-			cConfiguracion = cConfiguracion + `dbg=${oBoards.Boards[nPosicion].configuracion.dbg},`;
-			cConfiguracion = cConfiguracion + `lvl=${oBoards.Boards[nPosicion].configuracion.lvl},`;
-			cConfiguracion = cConfiguracion + `wipe=${oBoards.Boards[nPosicion].configuracion.wipe},`;
-			cConfiguracion = cConfiguracion + `baud=${oBoards.Boards[nPosicion].configuracion.baud}`;
+			let cConfiguracion = '';
+			if (oJsonConfiguracion["xtal"]) { cConfiguracion = cConfiguracion + `xtal=${oJsonConfiguracion.xtal},`; }
+			if (oJsonConfiguracion["vt"]) { cConfiguracion = cConfiguracion + `vt=${oJsonConfiguracion.vt},`; }
+			if (oJsonConfiguracion["exception"]) { cConfiguracion = cConfiguracion + `exception=${oJsonConfiguracion.exception},`; }
+			if (oJsonConfiguracion["ssl"]) { cConfiguracion = cConfiguracion + `ssl=${oJsonConfiguracion.ssl},`; }
+			if (oJsonConfiguracion["ResetMethod"]) { cConfiguracion = cConfiguracion + `ResetMethod=${oJsonConfiguracion.ResetMethod},`; }
+			if (oJsonConfiguracion["CrystalFreq"]) { cConfiguracion = cConfiguracion + `CrystalFreq=${oJsonConfiguracion.CrystalFreq},`; }
+			if (oJsonConfiguracion["FlashFreq"]) { cConfiguracion = cConfiguracion + `FlashFreq=${oJsonConfiguracion.FlashFreq},`; }
+			if (oJsonConfiguracion["FlashMode"]) { cConfiguracion = cConfiguracion + `FlashMode=${oJsonConfiguracion.FlashMode},`; }
+			if (oJsonConfiguracion["eesz"]) { cConfiguracion = cConfiguracion + `eesz=${oJsonConfiguracion.eesz},`; }
+			if (oJsonConfiguracion["sdk"]) { cConfiguracion = cConfiguracion + `sdk=${oJsonConfiguracion.sdk},`; }
+			if (oJsonConfiguracion["ip"]) { cConfiguracion = cConfiguracion + `ip=${oJsonConfiguracion.ip},`; }
+			if (oJsonConfiguracion["dbg"]) { cConfiguracion = cConfiguracion + `dbg=${oJsonConfiguracion.dbg},`; }
+			if (oJsonConfiguracion["lvl"]) { cConfiguracion = cConfiguracion + `lvl=${oJsonConfiguracion.lvl},`; }
+			if (oJsonConfiguracion["wipe"]) { cConfiguracion = cConfiguracion + `wipe=${oJsonConfiguracion.wipe},`; }
+			if (oJsonConfiguracion["baud"]) { cConfiguracion = cConfiguracion + `baud=${oJsonConfiguracion.baud},`; }
+
+			cConfiguracion = cConfiguracion.substring(0, cConfiguracion.length - 1);
 			//Añadimos al array de salida el string con la configuracion
 			aSalida.push(cConfiguracion);
-console.log(cConfiguracion);			
 		}
 	}
 	return (aSalida);
@@ -129,13 +126,142 @@ console.log(cConfiguracion);
  */
 function activate(context) {
 
-	console.log('Congratulations, your extension "serverpic" is now active!');
 
-	vscode.commands.registerCommand("serverpic.new", async () => {
+	let disposable = vscode.commands.registerCommand("serverpic.new", async () => {
 
-		console.log(`Comando Serverpic.new`);
+
 
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
+		const FolderExtension = "C:\\Users\\Julian\\.vscode\\extensions\\serverpic";
+		const newReactFolder = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
+		const Placa = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
+
+		//Seleccionamos plataforma y determinamos la version del compilador instalado
+		let cPlataforma = await Plataforma();
+		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
+		//Seleccionamos el modelo de placa
+		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
+		let cModelo = aDatosPlataforma[0];
+		//window.showInformationMessage('ooolleee');		
+
+		let Fecha = new Date();
+		Fecha = Fecha.toLocaleDateString();
+		const we = new vscode.WorkspaceEdit();
+		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
+		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
+		const DirectorioVscode = `${thisWorkspace}/.vscode`;
+
+
+		// definimos los ficheros a incluir
+		let TeamCity = vscode.Uri.parse(`${DirectorioTrabajo}/TeamCity.sh`);                                                        // TeamCity.sh
+		let ino = vscode.Uri.parse(`${DirectorioTrabajo}/${newReactFolder}.ino`);                                                   // Ino
+		let IO = vscode.Uri.parse(`${DirectorioTrabajo}/IO.h`);                                                                     // IO.H
+		let Serverpic = vscode.Uri.parse(`${DirectorioTrabajo}/Serverpic.h`);                                                      // Serverpic.h
+		let boardlist = vscode.Uri.parse(`${DirectorioTrabajo}/boardlist.sh`);                                                      // Serverpic.h
+		let hardware = vscode.Uri.parse(`${DirectorioTrabajo}/hardware`);
+		let arduinojson = vscode.Uri.parse(`${DirectorioVscode}/arduino.json`);
+		let compila = vscode.Uri.parse(`${DirectorioTrabajo}/Compila.bat`);
+		let upload = vscode.Uri.parse(`${DirectorioTrabajo}/Upload.bat`);
+		
+
+		let newFiles = [TeamCity, ino, IO, Serverpic, boardlist, hardware, arduinojson, compila, upload];                                                                             // Creamos array de ficheros
+		for (const newFile of newFiles) { we.createFile(newFile, { ignoreIfExists: false, overwrite: true }) };
+
+		//-------------------
+		//Fichero TeamCity.sh
+		//-------------------
+		let uriTeamCity = vscode.Uri.file(`${FolderExtension}/Plantillas/TeamCity.s_`);                                           //Establecemos el path de la plantilla TeamCity
+		let oTeamCityTexto = vscode.workspace.openTextDocument(uriTeamCity);                                                     //Cargamos la plantilla TeamCity
+		let TeamCityTexto = ((await oTeamCityTexto).getText());                                                                   //Extraemos el texto de la plantilla    
+		TeamCityTexto = (TeamCityTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                  //Hacemos los remplazos pertinentes
+		we.insert(TeamCity, new vscode.Position(0, 0), TeamCityTexto);                                                             //Grabamos la informacion en TeamCity.sh
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+	
+		//-------------------
+		//Fichero IO.h
+		//-------------------
+			let uriIO = vscode.Uri.file(`${FolderExtension}/Plantillas/IO.h_`);                                                       //Establecemos el path de la plantilla IO
+		let oIOTexto = vscode.workspace.openTextDocument(uriIO);                                                                 //Cargamos la plantilla IO
+		let IOTexto = ((await oIOTexto).getText());                                                                               //Extraemos el texto de la plantilla    
+		IOTexto = (IOTexto.toString()).replace('#Placa#', `${Placa}`);                                                             //Hacemos los remplazos pertinentes
+		IOTexto = (IOTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
+		IOTexto = (IOTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		we.insert(IO, new vscode.Position(0, 0), IOTexto);                                                                         //Grabamos la informacion en IO.h
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+ 		
+		//-------------------
+		//Fichero Serverpic.h
+		//-------------------			
+		let uriServerpic = vscode.Uri.file(`${FolderExtension}/Plantillas/Serverpic.h_`);                                         //Establecemos el path de la plantilla Serverpic
+		let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                   //Cargamos la plantilla Serverpic
+		let ServerpicTexto = ((await oServerpicTexto).getText());                                                                 //Extraemos el texto de la plantilla    
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);                                               //Hacemos los remplazos pertinentes
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Modelo#', `${cModelo}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Ino#', `${newReactFolder}${Placa}`);
+		ServerpicTexto = (ServerpicTexto.toString()).replace('#Core#', `${cVersionPlataforma}`);
+		we.insert(Serverpic, new vscode.Position(0, 0), ServerpicTexto);                                                           //Grabamos la informacion en Serverpic.h
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+
+		//-------------------
+		//Fichero *.ino
+		//-------------------
+		let uriIno = vscode.Uri.file(`${FolderExtension}/Plantillas/Ino.in_`);                                                    //Establecemos el path de la plantilla TeamCity
+		let oInoTexto = vscode.workspace.openTextDocument(uriIno);                                                               //Cargamos la plantilla TeamCity
+		let InoTexto = ((await oInoTexto).getText());                                                                             //Extraemos el texto de la plantilla    
+		InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		InoTexto = (InoTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		we.insert(ino, new vscode.Position(0, 0), InoTexto);                                                                       //Grabamos la informacion en el prigrama ino
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+
+		//---------------------
+		//Fichero boardlsit.sh
+		//---------------------	
+		let uriBoardlist = vscode.Uri.file(`${FolderExtension}/Plantillas/boardlist.s_`);                                                    //Establecemos el path de la plantilla TeamCity
+		let oBoardlistTexto = vscode.workspace.openTextDocument(uriBoardlist);                                                               //Cargamos la plantilla TeamCity
+		let BoardlistTexto = ((await oBoardlistTexto).getText());                                                                             //Extraemos el texto de la plantilla    
+		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		BoardlistTexto = (BoardlistTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		we.insert(boardlist, new vscode.Position(0, 0), BoardlistTexto);                                                                       //Grabamos la informacion en el prigrama ino
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+
+		//-------------------
+		//Fichero hardware
+		//-------------------
+		we.insert(hardware, new vscode.Position(0, 0), `${newReactFolder}`);
+
+		//----------------------------------
+		//Generamos el fichero arduino.json
+		//----------------------------------
+		let oJson =
+		{
+			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
+			"configuration": `${aDatosPlataforma[2]}`,
+			"board": `${aDatosPlataforma[1]}`,
+			"output": `${newReactFolder}\\build`
+		};
+		let DataJson = JSON.stringify(oJson);
+		we.insert(arduinojson, new vscode.Position(0, 0), DataJson);
+		//vscode.window.showTextDocument(oTeamCityTexto)
+
+		//-------------------
+		//Fichero Compila
+		//-------------------
+		we.insert(compila, new vscode.Position(0, 0), `arduino-cli compile -b ${aDatosPlataforma[1]}:${aDatosPlataforma[2]} --build-path %~d0%~p0build -e -v `);
+
+		//-------------------
+		//Fichero Upload
+		//-------------------
+		we.insert(upload, new vscode.Position(0, 0), `arduino-cli upload -p %1 -b ${aDatosPlataforma[1]} -i %~d0%~p0build/${aDatosPlataforma[1]}/${newReactFolder}.ino.bin `);
+
+		await vscode.workspace.applyEdit(we);                                                                                       // apply all the edits: file creation and adding text
+		for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
 
 		//		await vscode.commands.executeCommand("arduino.initialize");
 	});
