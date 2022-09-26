@@ -1,5 +1,5 @@
 {
-  "name": "serverpic",
+  	"name": "serverpic",
 	"displayName": "Serverpic",
 	"description": "Creacion de proyectos Serveric",
 	"version": "0.0.1",
@@ -10,16 +10,46 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:serverpic.new"
+        "onCommand:serverpic.new",
+		"onCommand:serverpic.hello"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
             	"command": "serverpic.new",
-            	"title": "New Proyect Serverpic"
+            	"title": "New Proyect Serverpic",
+				"icon": {
+					"dark": "images/ArduinoVerify_inverse_16.svg",
+					"light": "images/ArduinoVerify_16.svg"
+				}
+			},
+			{
+					"command": "serverpic.hello",
+					"title": "Serverpic Hello",
+					"icon": {
+						"dark": "images/ArduinoVerify_inverse_16.svg",
+						"light": "images/ArduinoVerify_16.svg"
+					}
 			}
-		]
+			
+		],
+		
+		"menus": {
+			"editor/title": [
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.new",
+					"group": "navigation"
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.hello",
+					"group": "navigation"
+				}
+
+			]
+		}
 	},
 	"scripts": {
 		"lint": "eslint .",

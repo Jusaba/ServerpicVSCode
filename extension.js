@@ -143,7 +143,6 @@ function activate(context) {
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
 		let cModelo = aDatosPlataforma[0];
-		//window.showInformationMessage('ooolleee');		
 
 		let Fecha = new Date();
 		Fecha = Fecha.toLocaleDateString();
@@ -151,7 +150,9 @@ function activate(context) {
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
 		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
 		const DirectorioVscode = `${thisWorkspace}/.vscode`;
-
+console.log("---------------------------------------------------");
+console.log(DirectorioTrabajo);
+console.log(thisWorkspace);
 		// definimos los ficheros a incluir
 		let TeamCity = vscode.Uri.parse(`${DirectorioTrabajo}/TeamCity.sh`);                                                        // TeamCity.sh
 		let ino = vscode.Uri.parse(`${DirectorioTrabajo}/${newReactFolder}.ino`);                                                   // Ino
@@ -265,7 +266,43 @@ function activate(context) {
 
 		//		await vscode.commands.executeCommand("arduino.initialize");
 	});
+	let disposable1 = vscode.commands.registerCommand("serverpic.hello", async () => {
+		//Creamos un canal para escribir en la consola de salida con el nombre Serverpic
+		var outChannel = vscode.window.createOutputChannel('Serverpic');
+		outChannel.clear();
+		outChannel.appendLine("[Start] Compilando");
+		
+		const Directoriotrabajo = vscode.workspace.workspaceFolders[0].uri.toString();
+		
+		outChannel.appendLine(Directoriotrabajo);
+		//Preparamos para ejecutar el bat
+		const { spawn } = require('node:child_process');
+		const bat = spawn('cmd.exe', ['/c', 'D:/Repositorios/Domo/Prueba/viento/Compila.bat']);
+
+		bat.stdout.on('data', (data) => {
+  			console.log(data.toString());
+			outChannel.appendLine("1.-");
+			outChannel.appendLine(data.toString());
+		});
+
+		bat.stderr.on('data', (data) => {
+  			console.error(data.toString());
+			outChannel.appendLine("2.-");
+			outChannel.appendLine(data.toString());
+		});
+
+		bat.on('exit', (code) => {
+  			console.log(`Child exited with code ${code}`);
+			outChannel.appendLine("3.-");
+			outChannel.appendLine(code.toString());
+		});
+		console.log("Hola Julian");
+		console.log( `${Directoriotrabajo}`);
+		outChannel.show();
+
+	})
 	context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable1);
 }
 
 // this method is called when your extension is deactivated
