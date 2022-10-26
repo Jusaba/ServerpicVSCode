@@ -28,10 +28,19 @@
 					"command": "serverpic.hello",
 					"title": "Serverpic Hello",
 					"icon": {
-						"dark": "images/ArduinoVerify_inverse_16.svg",
-						"light": "images/ArduinoVerify_16.svg"
+						"dark": "images/icons/dark/terminal.svg",
+						"light": "images/icons/light/terminal.svg"
 					}
-			}
+			},
+			{
+				"command": "serverpic.SerialPortSel",
+				"title": "Serverpic Select Serial Port"
+			},
+			{
+				"command": "serverpic.BaudiosSel",
+				"title": "Serverpic Select Baudios"
+			}						
+			
 			
 		],
 		
