@@ -6,6 +6,11 @@ const vscode = require("vscode")
 const fs = require('fs');
 //const { homedir } = require("os");
 
+
+
+
+
+
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
@@ -14,6 +19,7 @@ const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+
 
 /**************************
 * Funcion que presenta las plataformas instaladas
@@ -121,7 +127,42 @@ async function ModeloPlataforma(cPlataforma) {
 	}
 	return (aSalida);
 }
+async function ListSerialPort ()
+{
+	const { spawn } = require('node:child_process');
+	const bat = spawn('cmd.exe', ['/c', 'reg query HKLM\\HARDWARE\\DEVICEMAP\\SERIALCOMM']);
+	
+	bat.stderr.on('data', (data) => {
+	  console.error(data.toString());
+	  outChannel.appendLine("2.-");
+	  outChannel.appendLine(data.toString());
+	});
 
+	bat.stdout.on('data', (data) => { 
+		var cPorTxt = data.toString();
+		//console.log(bat);
+		let arrReg = cPorTxt.split("\n");
+		let aPuertos;
+		//if ( arr.indeOf('Device')>0)
+		//{
+		console.log(arrReg.length);
+		//console.log(cPorTxt);
+		console.log("***********");
+		arrReg.forEach(function(cTexto, index) {
+			if (cTexto.indexOf("Device")> 0)
+			{
+				console.log(`${index} : ${cTexto}`);
+				let aCom=cTexto.split("COM");
+				console.log("COM"+aCom[1]);
+				aPuertos.push ("COM"+aCom[1]);
+			}
+		});
+		aPuertos.forEach(function(cPuerto, index){
+			console.log(cPuerto);
+		})
+
+	});	
+}
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -149,7 +190,7 @@ function activate(context) {
 		const we = new vscode.WorkspaceEdit();
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
 		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
-		const DirectorioVscode = `${thisWorkspace}/.vscode`;
+		const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
 console.log("---------------------------------------------------");
 console.log(DirectorioTrabajo);
 console.log(thisWorkspace);
@@ -277,7 +318,7 @@ console.log(thisWorkspace);
 		outChannel.appendLine(Directoriotrabajo);
 		//Preparamos para ejecutar el bat
 		const { spawn } = require('node:child_process');
-		const bat = spawn('cmd.exe', ['/c', 'D:/Repositorios/Domo/Prueba/viento/Compila.bat']);
+		const bat = spawn('cmd.exe', ['/c', 'D:/Repositorios/Domo/KeyBt/Prueba.bat']);
 
 		bat.stdout.on('data', (data) => {
   			console.log(data.toString());
@@ -300,9 +341,23 @@ console.log(thisWorkspace);
 		console.log( `${Directoriotrabajo}`);
 		outChannel.show();
 
-	})
+	});
+	let disposable2 = vscode.commands.registerCommand("serverpic.com", async () => {
+		console.log("Hola---------------------------");
+		var outChannel = vscode.window.createOutputChannel('Serverpic');
+		outChannel.clear();
+		outChannel.appendLine("[Start] Compilando");
+		ListSerialPort();
+
+	  outChannel.show();
+
+
+
+	});	
+
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable1);
+	context.subscriptions.push(disposable2);
 }
 
 // this method is called when your extension is deactivated

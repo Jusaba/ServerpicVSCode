@@ -11,7 +11,8 @@
 	],
 	"activationEvents": [
         "onCommand:serverpic.new",
-		"onCommand:serverpic.hello"
+		"onCommand:serverpic.hello",
+		"onCommand:serverpic.com"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -31,6 +32,14 @@
 						"dark": "images/ArduinoVerify_inverse_16.svg",
 						"light": "images/ArduinoVerify_16.svg"
 					}
+			},
+			{
+					"command": "serverpic.com",
+					"title": "Serverpic Puerto Serie",
+					"icon": {
+						"dark": "images/ArduinoVerify_inverse_16.svg",
+						"light": "images/ArduinoVerify_16.svg"
+					}
 			}
 			
 		],
@@ -45,6 +54,11 @@
 				{
 					"when": "resourceExtname == .ino",
 					"command": "serverpic.hello",
+					"group": "navigation"
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.com",
 					"group": "navigation"
 				}
 
