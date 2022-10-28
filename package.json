@@ -11,8 +11,12 @@
 	],
 	"activationEvents": [
         "onCommand:serverpic.new",
+<<<<<<< HEAD
 		"onCommand:serverpic.hello",
 		"onCommand:serverpic.com"
+=======
+		"onCommand:serverpic.monitor"
+>>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -26,14 +30,15 @@
 				}
 			},
 			{
-					"command": "serverpic.hello",
-					"title": "Serverpic Hello",
+					"command": "serverpic.monitor",
+					"title": "Serverpic Monitor",
 					"icon": {
-						"dark": "images/ArduinoVerify_inverse_16.svg",
-						"light": "images/ArduinoVerify_16.svg"
+						"dark": "images/icons/dark/terminal.svg",
+						"light": "images/icons/light/terminal.svg"
 					}
 			},
 			{
+<<<<<<< HEAD
 					"command": "serverpic.com",
 					"title": "Serverpic Puerto Serie",
 					"icon": {
@@ -42,18 +47,31 @@
 					}
 			}
 			
+=======
+				"command": "serverpic.SerialPortSel",
+				"title": "Serverpic Select Serial Port"
+			},
+			{
+				"command": "serverpic.BaudiosSel",
+				"title": "Serverpic Select Baudios"
+			},
+			{
+				"command": "serverpic.BoardSel",
+				"title": "Serverpic Select Board"
+			}						
+>>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
 		],
 		
 		"menus": {
 			"editor/title": [
 				{
-					"when": "resourceExtname == .ino",
+					"when": "resourceExtname == .in_",
 					"command": "serverpic.new",
 					"group": "navigation"
 				},
 				{
-					"when": "resourceExtname == .ino",
-					"command": "serverpic.hello",
+					"when": "resourceExtname == .in_",
+					"command": "serverpic.monitor",
 					"group": "navigation"
 				},
 				{
