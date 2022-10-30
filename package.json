@@ -11,12 +11,8 @@
 	],
 	"activationEvents": [
         "onCommand:serverpic.new",
-<<<<<<< HEAD
-		"onCommand:serverpic.hello",
-		"onCommand:serverpic.com"
-=======
-		"onCommand:serverpic.monitor"
->>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
+		"onCommand:serverpic.monitor",
+		"onCommand:serverpic.compila"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -38,16 +34,22 @@
 					}
 			},
 			{
-<<<<<<< HEAD
-					"command": "serverpic.com",
-					"title": "Serverpic Puerto Serie",
+					"command": "serverpic.compila",
+					"title": "Serverpic Compilar",
 					"icon": {
-						"dark": "images/ArduinoVerify_inverse_16.svg",
-						"light": "images/ArduinoVerify_16.svg"
+						"dark": "images/icons/dark/run.svg",
+						"light": "images/icons/light/run.svg"
 					}
-			}
-			
-=======
+			},
+			{
+				"command": "serverpic.upload",
+				"title": "Serverpic Upload",
+				"icon": {
+					"dark": "images/icons/dark/export.svg",
+					"light": "images/icons/light/export.svg"
+				}
+			},
+			{
 				"command": "serverpic.SerialPortSel",
 				"title": "Serverpic Select Serial Port"
 			},
@@ -59,24 +61,28 @@
 				"command": "serverpic.BoardSel",
 				"title": "Serverpic Select Board"
 			}						
->>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
 		],
 		
 		"menus": {
 			"editor/title": [
 				{
-					"when": "resourceExtname == .in_",
+					"when": "resourceExtname == .ino",
 					"command": "serverpic.new",
 					"group": "navigation"
 				},
 				{
-					"when": "resourceExtname == .in_",
+					"when": "resourceExtname == .ino",
 					"command": "serverpic.monitor",
 					"group": "navigation"
 				},
 				{
 					"when": "resourceExtname == .ino",
-					"command": "serverpic.com",
+					"command": "serverpic.compila",
+					"group": "navigation"
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.upload",
 					"group": "navigation"
 				}
 

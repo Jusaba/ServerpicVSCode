@@ -1,0 +1,26 @@
+{
+	"version": "0.1.0",
+	"Boards": [
+		{
+			"name": "esp32wrover",
+			"configuracion":
+			{  
+			  "fqbn" : "esp32:esp32:esp32wrover",
+			  "FlashMode":"dio",
+              "PartitionScheme":"huge_app",
+              "DebugLevel":"none",
+              "UploadSpeed":"115200"
+			}
+			
+		},
+		{
+			"name":"d1_mini32",
+			"configuracion":
+			{
+				"fqbn" : "esp32:esp32:d1_mini32",
+				"PartitionScheme":"min_spiffs",
+				"UploadSpeed":"115200"
+			}
+		}
+    ]
+} 

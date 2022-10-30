@@ -9,18 +9,13 @@ const { Console } = require('console');
 //const { homedir } = require("os");
 
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
+
 var SerialPortSelected;
+var aBoard;
 
 //Barra de estado para Serverpic
 const statusBarServerpic = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);			//Titulo
@@ -28,17 +23,72 @@ const statusBarCom = vscode.window.createStatusBarItem(vscode.StatusBarAlignment
 const statusBarBaudios = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Baudios
 const statusBarModelo = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Modelo de micro
 
+function CheckCOM ()
+{
+	var lSalida = false;
+	var cPuerto = statusBarCom.text;
+	var cBaudios = statusBarBaudios.text;
+	if ( cPuerto != 'COM' && cBaudios != 'Baudios')
+	{
+		lSalida = true;
+	}	
+	console.log (cPuerto);
+	console.log (cBaudios);
+	console.log('Salida: ');
+	console.log(lSalida);
+	return lSalida;
+}
+function CheckBoard()
+{	var lSalida = false;
+	var cBoard = statusBarModelo.text;
+	if ( cBoard != 'Board')
+	{
+		lSalida = true;
+	}
+	return lSalida;	
+
+}
+async function Upload ()
+{
+	if (CheckCOM () == true)
+	{
+		if ( CheckBoard() == true)
+		{
+			var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
+			var aTexto = cPath.split('/');
+			var cFile = aTexto[aTexto.length-1]+".ino.bin";
+			var cUpload = `arduino-cli upload -p ${statusBarCom.text} -b ${aBoard[1]} -i build/`+cFile;
+			vscode.commands.executeCommand('workbench.action.terminal.focus');
+			vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cUpload  +'\n' });
+		}else{
+			vscode.window.showErrorMessage('Se debe seleccionar un micro valido')
+		}
+	}else{
+		vscode.window.showErrorMessage('Se debe seleccionar puerto valido');
+	}	
+}
+async function Compila()
+{
+	if (CheckBoard () == true)
+	{
+		var cCompila = `arduino-cli compile -b ${aBoard[1]}:${aBoard[2]} --build-path build -e -v `;
+		vscode.commands.executeCommand('workbench.action.terminal.focus');
+		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
+	}else{
+		vscode.window.showErrorMessage('Se debe seleccionar un micro valido');
+	}
+}
 async function Monitor ()
 {
 	var cPuerto = statusBarCom.text;
 	var cBaudios = statusBarBaudios.text;
-	if ( cPuerto != 'COM' && cBaudios != 'Baudios')
+	if (CheckCOM () == true)
 	{
 		var cTerminal = "arduino-cli monitor -p "+cPuerto+" -c baudrate="+cBaudios+ " -c bits=8 -c parity=none -c stop_bits=1 -c dtr=off -c rts=off"	;																	//Ponemos en la barra de estado la nueva velocidad
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
 		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cTerminal  +'\n' });
 	}else{
-		vscode.window.showErrorMessage('Se debe seleccionar puerto valido')
+		vscode.window.showErrorMessage('Se debe seleccionar puerto valido');
 	}
 
 }
@@ -315,6 +365,9 @@ async function ModeloPlataforma(cPlataforma) {
 			if (oJsonConfiguracion["lvl"]) { cConfiguracion = cConfiguracion + `lvl=${oJsonConfiguracion.lvl},`; }
 			if (oJsonConfiguracion["wipe"]) { cConfiguracion = cConfiguracion + `wipe=${oJsonConfiguracion.wipe},`; }
 			if (oJsonConfiguracion["baud"]) { cConfiguracion = cConfiguracion + `baud=${oJsonConfiguracion.baud},`; }
+			if (oJsonConfiguracion["PartitionScheme"]) { cConfiguracion = cConfiguracion + `PartitionScheme=${oJsonConfiguracion.PartitionScheme},`; }
+			if (oJsonConfiguracion["DebugLevel"]) { cConfiguracion = cConfiguracion + `DebugLevel=${oJsonConfiguracion.DebugLevel},`; }
+			if (oJsonConfiguracion["UploadSpeed"]) { cConfiguracion = cConfiguracion + `UploadSpeed=${oJsonConfiguracion.UploadSpeed},`; }
 
 			cConfiguracion = cConfiguracion.substring(0, cConfiguracion.length - 1);
 			//Añadimos al array de salida el string con la configuracion
@@ -514,58 +567,10 @@ console.log(thisWorkspace);
 		
 		outChannel.appendLine(Directoriotrabajo);
 		//Preparamos para ejecutar el bat
-<<<<<<< HEAD
-		const { spawn } = require('node:child_process');
-		const bat = spawn('cmd.exe', ['/c', 'D:/Repositorios/Domo/KeyBt/Prueba.bat']);
-
-=======
-		//const { spawn } = require('node:child_process');
-		//const bat = spawn('cmd.exe', ['/c', 'D:/Repositorios/Domo/Prueba/viento/Compila.bat']);
-/*
->>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
-		bat.stdout.on('data', (data) => {
-  			console.log(data.toString());
-			outChannel.appendLine("1.-");
-			outChannel.appendLine(data.toString());
-		});
-
-		bat.stderr.on('data', (data) => {
-  			console.error(data.toString());
-			outChannel.appendLine("2.-");
-			outChannel.appendLine(data.toString());
-		});
-
-		bat.on('exit', (code) => {
-  			console.log(`Child exited with code ${code}`);
-			outChannel.appendLine("3.-");
-			outChannel.appendLine(code.toString());
-		});
-		console.log("Hola Julian");
-		console.log( `${Directoriotrabajo}`);
-		outChannel.show();
-<<<<<<< HEAD
+		Monitor();
 
 	});
-	let disposable2 = vscode.commands.registerCommand("serverpic.com", async () => {
-		console.log("Hola---------------------------");
-		var outChannel = vscode.window.createOutputChannel('Serverpic');
-		outChannel.clear();
-		outChannel.appendLine("[Start] Compilando");
-		ListSerialPort();
 
-	  outChannel.show();
-
-
-
-	});	
-
-	context.subscriptions.push(disposable);
-	context.subscriptions.push(disposable1);
-	context.subscriptions.push(disposable2);
-=======
-*/
-Monitor();
-	});
 	let disposable2 = vscode.commands.registerCommand("serverpic.SerialPortSel", async () => {
 		LeePuertos();
 	});	
@@ -577,15 +582,23 @@ Monitor();
 		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		
+		statusBarModelo.text=aDatosPlataforma[0];
+		console.log(`arduino-cli compile -b ${aDatosPlataforma[1]}:${aDatosPlataforma[2]} --build-path build -e -v `);
+		aBoard = aDatosPlataforma;
 	});	
-	
+	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
+		Compila (); 
+	});	
+	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
+		Upload (); 
+	});	
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable1);
 	context.subscriptions.push(disposable2);
 	context.subscriptions.push(disposable3);
 	context.subscriptions.push(disposable4);
->>>>>>> 18eaca64dce53dbb2b07229ab5412c4fe8ae4b36
+	context.subscriptions.push(disposable5);
+	context.subscriptions.push(disposable6);
 }
 
 // this method is called when your extension is deactivated
