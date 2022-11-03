@@ -7,6 +7,7 @@ const vscode = require("vscode")
 const fs = require('fs');
 const { Console } = require('console');
 //const { homedir } = require("os");
+const port = require ('./SerialPOrt.js');
 
 
 //Configuracion directorios
@@ -15,6 +16,7 @@ const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
 var SerialPortSelected;
+
 var aBoard;
 
 //Barra de estado para Serverpic
@@ -23,6 +25,54 @@ const statusBarCom = vscode.window.createStatusBarItem(vscode.StatusBarAlignment
 const statusBarBaudios = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Baudios
 const statusBarModelo = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Modelo de micro
 
+async function LeeDirectorio (cDirectorio)
+{
+	var cDirTot = '';
+	var cDirInd = '';
+
+	cDirTot = cDirTot+'\t\t\t\t'+'\"'+(cDirectorio.substring(0, cDirectorio.length - 1))+'\",'+'\n';	//Directorio contenedor
+	let files = fs.readdirSync(cDirectorio)																//Leemos el contenido del directorio
+	files.forEach(file => {																			//Recorremos el contenido
+		cDirInd = cDirectorio+file;																	//Añadimos todo el path al objetivo
+		var stat = fs.statSync(cDirInd)																//Miramos de que tipo es el objetivo 
+		if (stat.isDirectory())																		//Si es un directorio
+		{
+			if (fs.existsSync(cDirInd+'/src'))														//Miramos si en el hay otro directorio src
+			{
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'/src\",'+'\n';							//Si lo hay agragamos el directorio src
+			}else{
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'\",'+'\n';								//Si no, el directorio original
+			}
+		}
+	})
+	return (cDirTot);
+} 
+
+async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
+{
+	var cListaLib = '';
+	/*
+	const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
+	const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
+	const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
+	*/
+
+	//const items = fs.readdir("C:\\Users\\Julian\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.6\\tools\\sdk\\include\\");
+	//console.log(items);
+	var cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/tools/sdk/include/`
+	cListaLib =  await LeeDirectorio(cDirectorio);
+	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/libraries/`
+	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
+	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/cores/${cPlataforma}/`
+	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
+	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/variants/${cModelo}/`
+	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
+	cDirectorio = `${cDirUsuario}/Documentos/Arduino/libraries/`
+	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
+	cListaLib = cListaLib.substring(0, cListaLib.length-2); 
+                    
+	return(cListaLib);
+} 
 function CheckCOM ()
 {
 	var lSalida = false;
@@ -57,7 +107,7 @@ async function Upload ()
 			var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
 			var aTexto = cPath.split('/');
 			var cFile = aTexto[aTexto.length-1]+".ino.bin";
-			var cUpload = `arduino-cli upload -p ${statusBarCom.text} -b ${aBoard[1]} -i build/`+cFile;
+			var cUpload = `arduino-cli upload -p ${statusBarCom.text} -b ${aBoard[3]} -i build/`+cFile;
 			vscode.commands.executeCommand('workbench.action.terminal.focus');
 			vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cUpload  +'\n' });
 		}else{
@@ -69,9 +119,10 @@ async function Upload ()
 }
 async function Compila()
 {
+
 	if (CheckBoard () == true)
 	{
-		var cCompila = `arduino-cli compile -b ${aBoard[1]}:${aBoard[2]} --build-path build -e -v `;
+		var cCompila = `arduino-cli compile -b ${aBoard[3]}:${aBoard[4]} --build-path build -e -v `;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
 		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
 	}else{
@@ -201,6 +252,7 @@ async function SerialPortConfig (cPuerto)
 	});	
 }
 
+
 /**************************
 * Funcion que permite seleccionar un puerto y los refleja en statusBarCom
 *
@@ -208,7 +260,7 @@ async function SerialPortConfig (cPuerto)
 */
 async function BrowseSerialPort (aPuertos)
 {
-		var SerialPortSelectedOld = SerialPortSelected;
+        var SerialPortSelectedOld = SerialPortSelected;
 		SerialPortSelected = await vscode.window.showQuickPick(aPuertos, { canPickMany: false, placeHolder: 'Seleccionar Puerto' });	
 		if (SerialPortSelected == undefined)
 		{
@@ -218,12 +270,11 @@ async function BrowseSerialPort (aPuertos)
 		}			
 		SerialPortConfig(statusBarCom.text);
 		statusBarCom.show();		
-
 }
 /**************************
 * Funcion que lee la cantidad de puertos serie ocupados y deja seleccionar uno
 */
-async function PuertosToArray ()
+async function  PuertosToArray ()
 {
 	var aPuertos = [];
 	const { spawn } = require('node:child_process');							//Ejecutamos un shel serialport-list ( orden cli preinstalada )
@@ -252,6 +303,7 @@ async function PuertosToArray ()
 	});	
 }
 
+
 async function LeePuertos()
 {
 	var outChannel = vscode.window.createOutputChannel('Serverpic');
@@ -261,7 +313,7 @@ async function LeePuertos()
 	
 	//StatusBarServerpic();
 	await PuertosToArray();
-	//vscode.commands.executeCommand('workbench.action.terminal.focus');
+	vscode.commands.executeCommand('workbench.action.terminal.focus');
 }
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -320,10 +372,14 @@ async function VersionPlataforma(cPlataforma) {
 * @param cPlataforma.- Plataforma seleccionada
 *
 * @return Devuelve un array con tres elementos
-*				[0].- Nombre del modelo de chip seleccionado
-*				[1].- fqbn del modelo seleccionado
-*				[2].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
-* 
+*				
+*				[0].- Plataforma
+*				[1].- Version de la plataforma	
+*				[2].- Nombre del modelo de chip seleccionado
+*				[3].- fqbn del modelo seleccionado
+*				[4].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
+* 				[5].- Compilador
+*				[6].- Directorio compilacion
 *
 */
 async function ModeloPlataforma(cPlataforma) {
@@ -332,6 +388,8 @@ async function ModeloPlataforma(cPlataforma) {
 	//Abrimos el fichero json con los chip  de la plataforma seleccionada
 	let JsonBoards = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
 	let oBoards = JSON.parse(JsonBoards);
+	aSalida.push(cPlataforma);
+	aSalida.push(VersionPlataforma(cPlataforma));
 	//Hacemos un array con los modelos de chip de la plataforma almacenados en el fichero
 	oBoards.Boards.forEach(element => {
 		aModelos.push(element.name);
@@ -374,6 +432,21 @@ async function ModeloPlataforma(cPlataforma) {
 			aSalida.push(cConfiguracion);
 		}
 	}
+	switch (cPlataforma) {
+		case 'arduino':
+//Pendiente----------------------------------------------------------------------------------------------------------------------
+//******************************************************************************************************************************* */
+			break;
+		case 'esp8266':
+			aSalida.push('xtensa-lx106-elf-g++')
+			aSalida.push('xtensa-lx106-elf-gcc/2.5.0-4-b40a506')
+			break;
+		case 'esp32':
+			aSalida.push('xtensa-esp32-elf-gcc')
+			aSalida.push('xtensa-esp32-elf-gcc/1.22.0-97-gc752ad5-5.2.0')
+			break;
+	}
+
 	return (aSalida);
 }
 async function ListSerialPort ()
@@ -421,8 +494,6 @@ function activate(context) {
 
 	let disposable = vscode.commands.registerCommand("serverpic.new", async () => {
 
-
-
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
 		const FolderExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;
 		const newReactFolder = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
@@ -433,7 +504,7 @@ function activate(context) {
 		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		let cModelo = aDatosPlataforma[0];
+		let cModelo = aDatosPlataforma[2];
 
 		let Fecha = new Date();
 		Fecha = Fecha.toLocaleDateString();
@@ -441,9 +512,6 @@ function activate(context) {
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
 		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
 		const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
-console.log("---------------------------------------------------");
-console.log(DirectorioTrabajo);
-console.log(thisWorkspace);
 		// definimos los ficheros a incluir
 		let TeamCity = vscode.Uri.parse(`${DirectorioTrabajo}/TeamCity.sh`);                                                        // TeamCity.sh
 		let ino = vscode.Uri.parse(`${DirectorioTrabajo}/${newReactFolder}.ino`);                                                   // Ino
@@ -451,33 +519,37 @@ console.log(thisWorkspace);
 		let Serverpic = vscode.Uri.parse(`${DirectorioTrabajo}/Serverpic.h`);                                                      // Serverpic.h
 		let boardlist = vscode.Uri.parse(`${DirectorioTrabajo}/boardlist.sh`);                                                      // Serverpic.h
 		let hardware = vscode.Uri.parse(`${DirectorioTrabajo}/hardware`);
-		let arduinojson = vscode.Uri.parse(`${DirectorioVscode}/arduino.json`);
+		let serverpicjson = vscode.Uri.parse(`${DirectorioVscode}/serverpic.json`);
 		let compila = vscode.Uri.parse(`${DirectorioTrabajo}/Compila.bat`);
 		let upload = vscode.Uri.parse(`${DirectorioTrabajo}/Upload.bat`);
-		
-
-		let newFiles = [TeamCity, ino, IO, Serverpic, boardlist, hardware, arduinojson, compila, upload];                                                                             // Creamos array de ficheros
+		let properties = vscode.Uri.parse(`${DirectorioVscode}/c_cpp_properties.json`);
+		//Creamos un array de los ficheros y los creamos
+		let newFiles = [TeamCity, ino, IO, Serverpic, boardlist, hardware, serverpicjson, compila, upload, properties];                                                                             // Creamos array de ficheros
 		for (const newFile of newFiles) { we.createFile(newFile, { ignoreIfExists: false, overwrite: true }) };
 
 		//-------------------
 		//Fichero TeamCity.sh
 		//-------------------
 		let uriTeamCity = vscode.Uri.file(`${FolderExtension}/Plantillas/TeamCity.s_`);                                           //Establecemos el path de la plantilla TeamCity
-		let oTeamCityTexto = vscode.workspace.openTextDocument(uriTeamCity);                                                     //Cargamos la plantilla TeamCity
+		let oTeamCityTexto = vscode.workspace.openTextDocument(uriTeamCity);                                                      //Cargamos la plantilla TeamCity
 		let TeamCityTexto = ((await oTeamCityTexto).getText());                                                                   //Extraemos el texto de la plantilla    
-		TeamCityTexto = (TeamCityTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                  //Hacemos los remplazos pertinentes
+		//TeamCityTexto = (TeamCityTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                  //Hacemos los remplazos pertinentes
+		TeamCityTexto = TeamCityTexto.split('#Dispositivo#').join(newReactFolder);												   //Hacemos los remplazos pertinentes
 		we.insert(TeamCity, new vscode.Position(0, 0), TeamCityTexto);                                                             //Grabamos la informacion en TeamCity.sh
 		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
 	
 		//-------------------
 		//Fichero IO.h
 		//-------------------
-			let uriIO = vscode.Uri.file(`${FolderExtension}/Plantillas/IO.h_`);                                                       //Establecemos el path de la plantilla IO
-		let oIOTexto = vscode.workspace.openTextDocument(uriIO);                                                                 //Cargamos la plantilla IO
-		let IOTexto = ((await oIOTexto).getText());                                                                               //Extraemos el texto de la plantilla    
-		IOTexto = (IOTexto.toString()).replace('#Placa#', `${Placa}`);                                                             //Hacemos los remplazos pertinentes
-		IOTexto = (IOTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
-		IOTexto = (IOTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		let uriIO = vscode.Uri.file(`${FolderExtension}/Plantillas/IO.h_`);                                                       //Establecemos el path de la plantilla IO
+		let oIOTexto = vscode.workspace.openTextDocument(uriIO);                                                                  //Cargamos la plantilla IO
+		let IOTexto = ((await oIOTexto).getText());                                                                               //Extraemos el texto de la plantilla 
+		IOTexto = IOTexto.split('#Placa#').join(Placa);   																		  //Hacemos los remplazos pertinentes	
+		IOTexto = IOTexto.split('#Dispositivo#').join(newReactFolder); 
+		IOTexto = IOTexto.split('#Fecha#').join(Fecha); 
+//		IOTexto = (IOTexto.toString()).replace('#Placa#', `${Placa}`);                                                             //Hacemos los remplazos pertinentes
+//		IOTexto = (IOTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
+//		IOTexto = (IOTexto.toString()).replace('#Fecha#', `${Fecha}`);
 		we.insert(IO, new vscode.Position(0, 0), IOTexto);                                                                         //Grabamos la informacion en IO.h
 		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
  		
@@ -485,16 +557,22 @@ console.log(thisWorkspace);
 		//Fichero Serverpic.h
 		//-------------------			
 		let uriServerpic = vscode.Uri.file(`${FolderExtension}/Plantillas/Serverpic.h_`);                                         //Establecemos el path de la plantilla Serverpic
-		let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                   //Cargamos la plantilla Serverpic
-		let ServerpicTexto = ((await oServerpicTexto).getText());                                                                 //Extraemos el texto de la plantilla    
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);                                               //Hacemos los remplazos pertinentes
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Modelo#', `${cModelo}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Fecha#', `${Fecha}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Ino#', `${newReactFolder}${Placa}`);
-		ServerpicTexto = (ServerpicTexto.toString()).replace('#Core#', `${cVersionPlataforma}`);
+		let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                    //Cargamos la plantilla Serverpic
+		let ServerpicTexto = ((await oServerpicTexto).getText());           													  //Extraemos el texto de la plantilla	
+		ServerpicTexto = ServerpicTexto.split('#Placa#').join(Placa); 															  //Hacemos los remplazos pertinentes 	
+		ServerpicTexto = ServerpicTexto.split('#Modelo#').join(cModelo);
+		ServerpicTexto = ServerpicTexto.split('#Dispositivo#').join(newReactFolder);
+		ServerpicTexto = ServerpicTexto.split('#Fecha#').join(Fecha);
+		ServerpicTexto = ServerpicTexto.split('#Ino#').join(newReactFolder+Placa);    
+		ServerpicTexto = ServerpicTexto.split('#Core#').join(cVersionPlataforma);                                                      
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);                                               
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Modelo#', `${cModelo}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Ino#', `${newReactFolder}${Placa}`);
+		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Core#', `${cVersionPlataforma}`);
 		we.insert(Serverpic, new vscode.Position(0, 0), ServerpicTexto);                                                           //Grabamos la informacion en Serverpic.h
 		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
 
@@ -502,11 +580,13 @@ console.log(thisWorkspace);
 		//Fichero *.ino
 		//-------------------
 		let uriIno = vscode.Uri.file(`${FolderExtension}/Plantillas/Ino.in_`);                                                    //Establecemos el path de la plantilla TeamCity
-		let oInoTexto = vscode.workspace.openTextDocument(uriIno);                                                               //Cargamos la plantilla TeamCity
-		let InoTexto = ((await oInoTexto).getText());                                                                             //Extraemos el texto de la plantilla    
-		InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		InoTexto = (InoTexto.toString()).replace('#Fecha#', `${Fecha}`);
+		let oInoTexto = vscode.workspace.openTextDocument(uriIno);                                                                //Cargamos la plantilla TeamCity
+		let InoTexto = ((await oInoTexto).getText());                                                                             //Extraemos el texto de la plantilla   
+		InoTexto = InoTexto.split('#Dispositivo#').join(newReactFolder);                                                          //Hacemos los remplazos pertinentes
+		InoTexto = InoTexto.split('#Fecha#').join(Fecha); 
+		//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           //Hacemos los remplazos pertinentes
+		//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           
+		//InoTexto = (InoTexto.toString()).replace('#Fecha#', `${Fecha}`);
 		we.insert(ino, new vscode.Position(0, 0), InoTexto);                                                                       //Grabamos la informacion en el prigrama ino
 		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
 
@@ -516,9 +596,11 @@ console.log(thisWorkspace);
 		let uriBoardlist = vscode.Uri.file(`${FolderExtension}/Plantillas/boardlist.s_`);                                                    //Establecemos el path de la plantilla TeamCity
 		let oBoardlistTexto = vscode.workspace.openTextDocument(uriBoardlist);                                                               //Cargamos la plantilla TeamCity
 		let BoardlistTexto = ((await oBoardlistTexto).getText());                                                                             //Extraemos el texto de la plantilla    
-		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		BoardlistTexto = BoardlistTexto.split('#Dispositivo#').join(newReactFolder);                                                          //Hacemos los remplazos pertinente
+		BoardlistTexto = BoardlistTexto.split('#Fecha#').join(Fecha);
+		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
+		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
 		BoardlistTexto = (BoardlistTexto.toString()).replace('#Fecha#', `${Fecha}`);
 		we.insert(boardlist, new vscode.Position(0, 0), BoardlistTexto);                                                                       //Grabamos la informacion en el prigrama ino
 		vscode.commands.executeCommand('workbench.action.closeActiveEditor');
@@ -529,33 +611,61 @@ console.log(thisWorkspace);
 		we.insert(hardware, new vscode.Position(0, 0), `${newReactFolder}`);
 
 		//----------------------------------
-		//Generamos el fichero arduino.json
+		//Generamos el fichero serverpic.json
 		//----------------------------------
 		let oJson =
 		{
 			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
-			"configuration": `${aDatosPlataforma[2]}`,
-			"board": `${aDatosPlataforma[1]}`,
+			"plataforma": `${aDatosPlataforma[0]}`,
+			"version": `${cVersionPlataforma}`,
+			"board": `${aDatosPlataforma[2]}`,
+			"fqbn": `${aDatosPlataforma[3]}`,
+			"configuration": `${aDatosPlataforma[4]}`,
+			"compilador": `${aDatosPlataforma[5]}`,
+			"dircompilador": `${aDatosPlataforma[6]}`,
 			"output": `${newReactFolder}\\build`
 		};
 		let DataJson = JSON.stringify(oJson);
-		we.insert(arduinojson, new vscode.Position(0, 0), DataJson);
-		//vscode.window.showTextDocument(oTeamCityTexto)
-
+		we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
+	
 		//-------------------
 		//Fichero Compila
 		//-------------------
-		we.insert(compila, new vscode.Position(0, 0), `arduino-cli compile -b ${aDatosPlataforma[1]}:${aDatosPlataforma[2]} --build-path %~d0%~p0build -e -v `);
+		we.insert(compila, new vscode.Position(0, 0), `arduino-cli compile -b ${aDatosPlataforma[3]}:${aDatosPlataforma[4]} --build-path %~d0%~p0build -e -v `);
 
 		//-------------------
 		//Fichero Upload
 		//-------------------
-		we.insert(upload, new vscode.Position(0, 0), `arduino-cli upload -p %1 -b ${aDatosPlataforma[1]} -i %~d0%~p0build/${aDatosPlataforma[1]}/${newReactFolder}.ino.bin `);
+		we.insert(upload, new vscode.Position(0, 0), `arduino-cli upload -p %1 -b ${aDatosPlataforma[3]} -i %~d0%~p0build/${aDatosPlataforma[3]}/${newReactFolder}.ino.bin `);
+
+		//-------------------
+		//Fichero c_cpp_properties
+		//-------------------
+		let cDirUsuario = (`${cUsuario}`.toString()).replace('\\', '/');
+		cDirUsuario = (cDirUsuario.toString()).replace('\\', '/');
+		let cDirectoriosLib = await Create_Intellisense (aDatosPlataforma[2], cDirUsuario, aDatosPlataforma[0], cVersionPlataforma);
+		let uriProperties = vscode.Uri.file(`${FolderExtension}/Plantillas/c_cpp_properties.jso_`);                                                 //Establecemos el path de la plantilla TeamCity
+		let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                                               		//
+		let PropertiesTexto = ((await oPropertiesTexto).getText());                                                                             	//Extraemos el texto de la plantilla    
+		PropertiesTexto = PropertiesTexto.split('#Dirusuario#').join(cDirUsuario);																	//Hacemos las sustituciones permanantes
+		PropertiesTexto = PropertiesTexto.split('#Plataforma#').join(aDatosPlataforma[0]);
+		PropertiesTexto = PropertiesTexto.split('#Version#').join(cVersionPlataforma);
+		PropertiesTexto = PropertiesTexto.split('#DirCompilador#').join(aDatosPlataforma[6]);
+		PropertiesTexto = PropertiesTexto.split('#Compilador#').join(aDatosPlataforma[5]);
+		PropertiesTexto = PropertiesTexto.split('#DirLib#').join(cDirectoriosLib);
+		
+
+		we.insert(properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');     
 
 		await vscode.workspace.applyEdit(we);                                                                                       // apply all the edits: file creation and adding text
 		for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
+		
+		//for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
 
-		//		await vscode.commands.executeCommand("arduino.initialize");
+		//vscode.commands.executeCommand('workbench.action.closeFolder');
+		
+
 	});
 	let disposable1 = vscode.commands.registerCommand("serverpic.monitor", async () => {
 		//Creamos un canal para escribir en la consola de salida con el nombre Serverpic
@@ -582,8 +692,7 @@ console.log(thisWorkspace);
 		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		statusBarModelo.text=aDatosPlataforma[0];
-		console.log(`arduino-cli compile -b ${aDatosPlataforma[1]}:${aDatosPlataforma[2]} --build-path build -e -v `);
+		statusBarModelo.text=aDatosPlataforma[2];
 		aBoard = aDatosPlataforma;
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {

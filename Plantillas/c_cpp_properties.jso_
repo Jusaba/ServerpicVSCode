@@ -1,0 +1,32 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "Arduino",
+            "compilerPath": "#Dirusuario#/AppData/Local/Arduino15/packages/#Plataforma#/tools/#DirCompilador#/bin/#Compilador#",
+            "compilerArgs": [
+                "-U__STRICT_ANSI__",
+                "-w",
+                "-mlongcalls",
+                "-mtext-section-literals",
+                "-fno-rtti",
+                "-falign-functions=4",
+                "-std=gnu++11"
+            ],
+            "intelliSenseMode": "windows-gcc-x86",
+            "includePath": [
+#DirLib#
+             
+            ],
+            "forcedInclude": [
+                "#Dirusuario#/AppData/Local/Arduino15/packages/#Plataforma#/hardware/#Plataforma#/#Version#/cores/#Plataforma#/Arduino.h"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "defines": [
+            ],
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ]
+
+}
