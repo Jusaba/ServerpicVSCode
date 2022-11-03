@@ -8,22 +8,17 @@ const fs = require('fs');
 const { Console } = require('console');
 //const { homedir } = require("os");
 const port = require ('./SerialPOrt.js');
-
+const BarraEstado = require ('./StatusBar.js');
+const JsonServerpic = require('./ServerpicJson.js');
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
-var SerialPortSelected;
 
 var aBoard;
 
-//Barra de estado para Serverpic
-const statusBarServerpic = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);			//Titulo
-const statusBarCom = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);					//COM
-const statusBarBaudios = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Baudios
-const statusBarModelo = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Modelo de micro
 
 async function LeeDirectorio (cDirectorio)
 {
@@ -76,8 +71,8 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 function CheckCOM ()
 {
 	var lSalida = false;
-	var cPuerto = statusBarCom.text;
-	var cBaudios = statusBarBaudios.text;
+	var cPuerto = BarraEstado.LeeCom();
+	var cBaudios = BarraEstado.LeeBaudios();
 	if ( cPuerto != 'COM' && cBaudios != 'Baudios')
 	{
 		lSalida = true;
@@ -131,8 +126,8 @@ async function Compila()
 }
 async function Monitor ()
 {
-	var cPuerto = statusBarCom.text;
-	var cBaudios = statusBarBaudios.text;
+	var cPuerto = await BarraEstado.LeeCom();
+	var cBaudios = await BarraEstado.LeeBaudios();
 	if (CheckCOM () == true)
 	{
 		var cTerminal = "arduino-cli monitor -p "+cPuerto+" -c baudrate="+cBaudios+ " -c bits=8 -c parity=none -c stop_bits=1 -c dtr=off -c rts=off"	;																	//Ponemos en la barra de estado la nueva velocidad
@@ -144,177 +139,14 @@ async function Monitor ()
 
 }
 
-/**************************
-* Funcion que crea la barra de estado de serverpic
-*
-*/
-async function StatusBarServerpic ()
-{
-	//Barra titulo	
-	statusBarServerpic.text = "|| Serverpic ";
-	statusBarServerpic.show();			
-	//Barra Com
-	let myCommandSerialPortSel = {};
-	myCommandSerialPortSel.title = 'SerialPortSel';
-	myCommandSerialPortSel.command = 'serverpic.SerialPortSel';
-	
-	statusBarCom.text = "COM";
-	statusBarCom.command = myCommandSerialPortSel;
-	statusBarCom.tooltip = 'Sel Serial Port';
-	statusBarCom.show();			
-	
-	//Barra Baudios
-	let myCommandBaudiosSel = {};
-	myCommandBaudiosSel.title = 'SerialPortSel';
-	myCommandBaudiosSel.command = 'serverpic.BaudiosSel';
-
-	statusBarBaudios.text = "Baudios";
-	statusBarBaudios.command = myCommandBaudiosSel;
-	statusBarBaudios.tooltip = "Baudios Sel",
-	statusBarBaudios.show();			
-
-	//Barra modelo micro
-	let myCommandBoardSel = {};
-	myCommandBoardSel.title = 'SerialBoardSel';
-	myCommandBoardSel.command = 'serverpic.BoardSel';
-
-	statusBarModelo.text = "Board";
-	statusBarModelo.command = myCommandBoardSel;
-	statusBarModelo.tooltip = "Board Sel",
-	statusBarModelo.show();			
 
 
-}
-
-/**************************
-* Funcion para seleccionar la velodicad del puerto serie
-*
-*/
-async function BaudioSel () {
-	var cPuerto=statusBarCom.text;
-	const aBaudios = ["300", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "74880", "115200", "230400", "250000"];			//Array de velocidades permitidas
-	var BaudiosSelected = await vscode.window.showQuickPick(aBaudios, { canPickMany: false, placeHolder: 'Seleccionar Velocidad' });	//Seleccion velocidad
-	const { spawn } = require('node:child_process');																					//Ejecutamos shell mode para asignar velocidad al puerto
-	const bat = await spawn('cmd.exe', ['/c', 'mode '+cPuerto+ ' '+BaudiosSelected]);
-	
-	//Si se recibe error
-	bat.stderr.on('data', (data) => {
-		vscode.window.showErrorMessage(`No se ha podido configurar el puerto!`);														//Informamos en barra de error
-	});
-	//Si se ejecuta el shell
-	bat.on('exit', (code) => {																											
-		console.log(`Child exited with code ${code}`);
-		if ( code == 0)																													//Si la salida es correcta
-		{
-			statusBarBaudios.text=BaudiosSelected;		
-			//vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": "code $(git diff --no-commit-id --name-only -r HEAD) -r\u000D" });
-		}else{																															//Si la salida es incorrecta
-			vscode.window.showErrorMessage('Error en BaudioSel ' + data.toString());												    //Notificamos el error
-			statusBarBaudios.text = "Baudios";																							//En la barra de estado no ponemos velocidad, ponemos Baudios
-		}	
-	});			
-}
-
-/**************************
-* Funcion que lee los datos de configuracion de un puerto serie
-*
-*@param cPuerto.- Puerto del que se requiere la indformacion
-*/
-async function SerialPortConfig (cPuerto)
-{
-	const { spawn } = require('node:child_process');					//Leemos la configuracion del puerto con shelll mode			
-	const bat = await spawn('cmd.exe', ['/c', 'mode '+cPuerto]);
-	//Si se ejecuta el shell tratamos los datos recibidos
-	bat.stdout.on('data', (data) => {
-		var cTexto = data.toString();						//Asignamos a cTexto lo que se recibe del comando
-		var aLineas = cTexto.split('\n');					//Troceamos y extraemos las lineas
-		aLineas.forEach(function(cLinea, cIndex)			//Recorremos las lineas
-		{
-			if ( cLinea.indexOf("Baudios:") > -1)			//Si tiene informacion de Baudios
-			{
-				var aBaudios = cLinea.split(':');			//Troceamos la linea con separador :
-				var cBaudios = aBaudios[1].trim();			//Quitamos los espacios del segundo termino que es el que contiene el COM
-				statusBarBaudios.text = cBaudios;			//Actualizamos la barra de baudios con el nuevo texto
-				statusBarBaudios.show();					
-				//aPuertos.push ( aPuertosTmp [0]);			//Añadimos a aPuertos el puerto leido
-			}else{											//Si no hay informacion de baudios en la informacion recibida
-				vscode.window.showErrorMessage(`No se puede leer la configuracion de ese puerto!`);	//Informamos del error
-			}
-		});
-	});
-	//Si se produce error en la ejecucion del Shell
-	bat.stderr.on('data', (data) => {
-		vscode.window.showErrorMessage('Error en SerialPortConfig ' + data.toString());										//Informamos en barra de error
-	});
-	//Si se ha ejecutado el shell
-	bat.on('exit', (code) => {
-		console.log(`Child exited with code ${code}`);
-	});	
-}
 
 
-/**************************
-* Funcion que permite seleccionar un puerto y los refleja en statusBarCom
-*
-*@param aPuertos.- Array con los puertos detectdos en la máquina
-*/
-async function BrowseSerialPort (aPuertos)
-{
-        var SerialPortSelectedOld = SerialPortSelected;
-		SerialPortSelected = await vscode.window.showQuickPick(aPuertos, { canPickMany: false, placeHolder: 'Seleccionar Puerto' });	
-		if (SerialPortSelected == undefined)
-		{
-			statusBarCom.text = SerialPortSelectedOld;
-		}else{
-			statusBarCom.text = SerialPortSelected;
-		}			
-		SerialPortConfig(statusBarCom.text);
-		statusBarCom.show();		
-}
-/**************************
-* Funcion que lee la cantidad de puertos serie ocupados y deja seleccionar uno
-*/
-async function  PuertosToArray ()
-{
-	var aPuertos = [];
-	const { spawn } = require('node:child_process');							//Ejecutamos un shel serialport-list ( orden cli preinstalada )
-	const bat = await spawn('cmd.exe', ['/c', 'serialport-list -f text']);
-	//https://serialport.io/docs/bin-list
-	//Si se recibe informacion del shell
-	bat.stdout.on('data', (data) => {
-		var cTexto = data.toString();						//Asignamos a cTexto lo que se recibe del comando
-		var aLineas = cTexto.split('\n');					//Troceamos y extraemos las lineas
-		aLineas.forEach(function(cPuerto, cIndex)			//Recorremos las lineas
-		{
-			if ( cPuerto.indexOf('COM') > -1)				//Si tiene informacion de un COM
-			{
-				var aPuertosTmp = cPuerto.split('\t');		//Troceamos la linea con separador tabulacion
-				aPuertos.push ( aPuertosTmp [0]);			//Añadimos a aPuertos el puerto leido
-			}
-		});
-	});
-	//Si se produce un error en la ejecucion del shell
-	bat.stderr.on('data', (data) => {
-		vscode.window.showErrorMessage('Error en PuertosToArray ' + data.toString());				//Informamos en barra de error
-	});
-	bat.on('exit', (code) => {
-		console.log(`Child exited with code ${code}`);
-		BrowseSerialPort(aPuertos);
-	});	
-}
 
 
-async function LeePuertos()
-{
-	var outChannel = vscode.window.createOutputChannel('Serverpic');
-	outChannel.clear();
-	outChannel.appendLine("Leyendo Puertos Serie");
-	outChannel.show();
-	
-	//StatusBarServerpic();
-	await PuertosToArray();
-	vscode.commands.executeCommand('workbench.action.terminal.focus');
-}
+
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -490,7 +322,7 @@ async function ListSerialPort ()
  */
 function activate(context) {
 
-	StatusBarServerpic();
+	BarraEstado.StatusBarServerpic();
 
 	let disposable = vscode.commands.registerCommand("serverpic.new", async () => {
 
@@ -682,10 +514,10 @@ function activate(context) {
 	});
 
 	let disposable2 = vscode.commands.registerCommand("serverpic.SerialPortSel", async () => {
-		LeePuertos();
+		await port.LeePuertos();
 	});	
 	let disposable3 = vscode.commands.registerCommand("serverpic.BaudiosSel", async () => {
-		BaudioSel (); 
+		await port.BaudioSel (); 
 	});	
 	let disposable4 = vscode.commands.registerCommand("serverpic.BoardSel", async () => {
 		let cPlataforma = await Plataforma();
@@ -696,7 +528,8 @@ function activate(context) {
 		aBoard = aDatosPlataforma;
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
-		Compila (); 
+		//Compila ();
+		JsonServerpic.DirWork(); 
 	});	
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
 		Upload (); 
