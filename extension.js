@@ -348,106 +348,18 @@ function activate(context) {
 		
 		// definimos los ficheros a incluir
 		                                                       
-		let ino = vscode.Uri.parse(`${DirectorioTrabajo}/${newReactFolder}.ino`);                                                   // Ino
-		let Serverpic = vscode.Uri.parse(`${DirectorioTrabajo}/Serverpic.h`);                                                      // Serverpic.h
-		let boardlist = vscode.Uri.parse(`${DirectorioTrabajo}/boardlist.sh`);                                                      // Serverpic.h
-		let hardware = vscode.Uri.parse(`${DirectorioTrabajo}/hardware`);
-		let compila = vscode.Uri.parse(`${DirectorioTrabajo}/Compila.bat`);
-		let upload = vscode.Uri.parse(`${DirectorioTrabajo}/Upload.bat`);
 		let properties = vscode.Uri.parse(`${DirectorioVscode}/c_cpp_properties.json`);
 		//Creamos un array de los ficheros y los creamos
-		let newFiles = [ ino, Serverpic, boardlist, hardware, compila, upload, properties];                                                                             // Creamos array de ficheros
+		let newFiles = [ properties];                                                                             // Creamos array de ficheros
 		for (const newFile of newFiles) { we.createFile(newFile, { ignoreIfExists: false, overwrite: true }) };
 
 		                                                   //Cerramos el fichero abierto en workspace
 	
 		
-		//-------------------
-		//Fichero Serverpic.h
-		//-------------------			
-		let uriServerpic = vscode.Uri.file(`${FolderExtension}/Plantillas/Serverpic.h_`);                                         //Establecemos el path de la plantilla Serverpic
-		let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                    //Cargamos la plantilla Serverpic
-		let ServerpicTexto = ((await oServerpicTexto).getText());           													  //Extraemos el texto de la plantilla	
-		ServerpicTexto = ServerpicTexto.split('#Placa#').join(Placa); 															  //Hacemos los remplazos pertinentes 	
-		ServerpicTexto = ServerpicTexto.split('#Modelo#').join(cModelo);
-		ServerpicTexto = ServerpicTexto.split('#Dispositivo#').join(newReactFolder);
-		ServerpicTexto = ServerpicTexto.split('#Fecha#').join(Fecha);
-		ServerpicTexto = ServerpicTexto.split('#Ino#').join(newReactFolder+Placa);    
-		ServerpicTexto = ServerpicTexto.split('#Core#').join(cVersionPlataforma);                                                      
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);                                               
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Placa#', `${Placa}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Modelo#', `${cModelo}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Fecha#', `${Fecha}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Ino#', `${newReactFolder}${Placa}`);
-		//ServerpicTexto = (ServerpicTexto.toString()).replace('#Core#', `${cVersionPlataforma}`);
-		we.insert(Serverpic, new vscode.Position(0, 0), ServerpicTexto);                                                           //Grabamos la informacion en Serverpic.h
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+		                                            //Cerramos el fichero abierto en workspace
 
-		//-------------------
-		//Fichero *.ino
-		//-------------------
-		let uriIno = vscode.Uri.file(`${FolderExtension}/Plantillas/Ino.in_`);                                                    //Establecemos el path de la plantilla TeamCity
-		let oInoTexto = vscode.workspace.openTextDocument(uriIno);                                                                //Cargamos la plantilla TeamCity
-		let InoTexto = ((await oInoTexto).getText());                                                                             //Extraemos el texto de la plantilla   
-		InoTexto = InoTexto.split('#Dispositivo#').join(newReactFolder);                                                          //Hacemos los remplazos pertinentes
-		InoTexto = InoTexto.split('#Fecha#').join(Fecha); 
-		//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           //Hacemos los remplazos pertinentes
-		//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           
-		//InoTexto = (InoTexto.toString()).replace('#Fecha#', `${Fecha}`);
-		we.insert(ino, new vscode.Position(0, 0), InoTexto);                                                                       //Grabamos la informacion en el prigrama ino
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
 
-		//---------------------
-		//Fichero boardlsit.sh
-		//---------------------	
-		let uriBoardlist = vscode.Uri.file(`${FolderExtension}/Plantillas/boardlist.s_`);                                                    //Establecemos el path de la plantilla TeamCity
-		let oBoardlistTexto = vscode.workspace.openTextDocument(uriBoardlist);                                                               //Cargamos la plantilla TeamCity
-		let BoardlistTexto = ((await oBoardlistTexto).getText());                                                                             //Extraemos el texto de la plantilla    
-		BoardlistTexto = BoardlistTexto.split('#Dispositivo#').join(newReactFolder);                                                          //Hacemos los remplazos pertinente
-		BoardlistTexto = BoardlistTexto.split('#Fecha#').join(Fecha);
-		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		//BoardlistTexto = (BoardlistTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                            //Hacemos los remplazos pertinentes
-		BoardlistTexto = (BoardlistTexto.toString()).replace('#Fecha#', `${Fecha}`);
-		we.insert(boardlist, new vscode.Position(0, 0), BoardlistTexto);                                                                       //Grabamos la informacion en el prigrama ino
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-
-		//-------------------
-		//Fichero hardware
-		//-------------------
-		we.insert(hardware, new vscode.Position(0, 0), `${newReactFolder}`);
-
-		//----------------------------------
-		//Generamos el fichero serverpic.json
-		//----------------------------------
-		/*
-		let oJson =
-		{
-			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
-			"plataforma": `${aDatosPlataforma[0]}`,
-			"version": `${cVersionPlataforma}`,
-			"board": `${aDatosPlataforma[2]}`,
-			"fqbn": `${aDatosPlataforma[3]}`,
-			"configuration": `${aDatosPlataforma[4]}`,
-			"compilador": `${aDatosPlataforma[5]}`,
-			"dircompilador": `${aDatosPlataforma[6]}`,
-			"output": `${newReactFolder}\\build`
-		};
-		
-		let DataJson = JSON.stringify(oJson);
-		we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
-		*/
-		//-------------------
-		//Fichero Compila
-		//-------------------
-		we.insert(compila, new vscode.Position(0, 0), `arduino-cli compile -b ${aDatosPlataforma[3]}:${aDatosPlataforma[4]} --build-path %~d0%~p0build -e -v `);
-
-		//-------------------
-		//Fichero Upload
-		//-------------------
-		we.insert(upload, new vscode.Position(0, 0), `arduino-cli upload -p %1 -b ${aDatosPlataforma[3]} -i %~d0%~p0build/${aDatosPlataforma[3]}/${newReactFolder}.ino.bin `);
+	
 
 		//-------------------
 		//Fichero c_cpp_properties
