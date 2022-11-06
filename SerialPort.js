@@ -1,3 +1,15 @@
+/**
+******************************************************
+* @file SerialPort.js
+* @brief Gestion de los puertos serie para  la extension de VSCode Serverpic
+* @author Julian Salas Bartolome
+* @version 1.0
+* @date Noviembre 2022
+*
+* Se exporta la funcion para seleccionar un puerto y para seleccionar una velocidad
+*
+* 
+*******************************************************/
 const { Console } = require("console");
 const vscode = require("vscode")
 
@@ -6,6 +18,9 @@ const BarraEstado = require ('./StatusBar.js');
 
 var SerialPortSelected;
 
+/**************************
+* Funcion que lee los puertos serie conectados
+*/
 exports.LeePuertos = async function ()
 {
 	var outChannel = vscode.window.createOutputChannel('Serverpic');
@@ -139,4 +154,20 @@ exports.BaudioSel = async function () {
 			BarraEstado.GrabaBaudios("Baudios");																							//En la barra de estado no ponemos velocidad, ponemos Baudios
 		}	
 	});			
+}
+
+/**************************
+* Funcion que comrpueba que en la barra de estado hay un com y una velocidad seleccionadas
+*
+*/
+ exports.CheckCOM = async function ()
+{
+	var lSalida = false;
+	var cPuerto = BarraEstado.LeeCom();
+	var cBaudios = BarraEstado.LeeBaudios();
+	if ( cPuerto != 'COM' && cBaudios != 'Baudios')
+	{
+		lSalida = true;
+	}	
+	return lSalida;
 }

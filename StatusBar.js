@@ -1,18 +1,33 @@
+/**
+******************************************************
+* @file StatusBar.js
+* @brief Gestion de la barra de estado de la extension de VSCode Serverpic
+* @author Julian Salas Bartolome
+* @version 1.0
+* @date Noviembre 2022
+*
+* Se exportan las variables que contienen las barras y las funciones de lectura, grabacion y visualizacion del contenido de la barra
+* En la grabacion, se incluye la actualizacion en .vscode/serverpic.json
+* 
+*******************************************************/
 const vscode = require("vscode")
+const JsonServerpic = require('./ServerpicJson.js');
 
-//Barra de estado para Serverpic
-const statusBarServerpic = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);			    //Titulo
+//Creacion de la barra de estado para Serverpic
+const statusBarServerpic = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);			//Titulo
 const statusBarCom = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);					//COM
 const statusBarBaudios = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Baudios
 const statusBarModelo = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);				//Modelo de micro
 
+//Exportacion de las barras
 exports.statusBarServerpic; 
 exports.statusBarCom; 
 exports.statusBarBaudios; 
 exports.statusBarModelo;
 
 /**************************
-* Funcion que crea la barra de estado de serverpic
+* Funcion que asigna a la barra de estado de serverpic los datos iniciales
+* y asigna las funciones de gestion a cada barra
 *
 */
 exports.StatusBarServerpic = async function  ()
@@ -27,7 +42,7 @@ exports.StatusBarServerpic = async function  ()
 	
 	statusBarCom.text = "COM";
 	statusBarCom.command = myCommandSerialPortSel;
-	statusBarCom.tooltip = 'Sel Serial Port';
+	statusBarCom.tooltip = 'Selecciona Serial Port';
 	statusBarCom.show();			
 	
 	//Barra Baudios
@@ -37,7 +52,7 @@ exports.StatusBarServerpic = async function  ()
 
 	statusBarBaudios.text = "Baudios";
 	statusBarBaudios.command = myCommandBaudiosSel;
-	statusBarBaudios.tooltip = "Baudios Sel",
+	statusBarBaudios.tooltip = "Selecciona Baudios",
 	statusBarBaudios.show();			
 
 	//Barra modelo micro
@@ -47,7 +62,7 @@ exports.StatusBarServerpic = async function  ()
 
 	statusBarModelo.text = "Board";
 	statusBarModelo.command = myCommandBoardSel;
-	statusBarModelo.tooltip = "Board Sel",
+	statusBarModelo.tooltip = "Selecciona Board",
 	statusBarModelo.show();			
 }
 /**************************
@@ -72,27 +87,30 @@ exports.LeeBoard = async function ()
     return (statusBarModelo.text);
 }
 /**************************
-* Registra un COM en la barra de estado
+* Registra un COM en la barra de estado y la graba en .vscode/serverpic.json
 */
 exports.GrabaCom = async function (cCOM)
 {
     statusBarCom.text = cCOM;
+	JsonServerpic.GrabaParamJson('com', cCOM);
     statusBarCom.show();
 }
 /**************************
-* Registra el dato de Baudios en la barra de estado
+* Registra el dato de Baudios en la barra de estado y la graba en .vscode/serverpic.json
 */
 exports.GrabaBaudios = async function (cBaudios)
 {
     statusBarBaudios.text = cBaudios;
+	JsonServerpic.GrabaParamJson('baudios', cBaudios);
     statusBarBaudios.show();
 }
 /**************************
-* Registra la Boars en la barra de estado
+* Registra la Boars en la barra de estado y la graba en .vscode/serverpic.json
 */
 exports.GrabaBoard = async function (cBoard)
 {
     statusBarModelo.text = cBoard;
+	JsonServerpic.GrabaParamJson('board', cBoard);
     statusBarModelo.show();
 }
 /**************************

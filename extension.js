@@ -10,6 +10,7 @@ const { Console } = require('console');
 const port = require ('./SerialPOrt.js');
 const BarraEstado = require ('./StatusBar.js');
 const JsonServerpic = require('./ServerpicJson.js');
+const Ficheros = require ('./Ficheros.js');
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
@@ -27,21 +28,36 @@ async function LeeDirectorio (cDirectorio)
 
 	cDirTot = cDirTot+'\t\t\t\t'+'\"'+(cDirectorio.substring(0, cDirectorio.length - 1))+'\",'+'\n';	//Directorio contenedor
 	let files = fs.readdirSync(cDirectorio)																//Leemos el contenido del directorio
-	files.forEach(file => {																			//Recorremos el contenido
-		cDirInd = cDirectorio+file;																	//Añadimos todo el path al objetivo
-		var stat = fs.statSync(cDirInd)																//Miramos de que tipo es el objetivo 
-		if (stat.isDirectory())																		//Si es un directorio
+	files.forEach(file => {																				//Recorremos el contenido
+		cDirInd = cDirectorio+file;																		//Añadimos todo el path al objetivo
+		var stat = fs.statSync(cDirInd)																	//Miramos de que tipo es el objetivo 
+		if (stat.isDirectory())																			//Si es un directorio
 		{
-			if (fs.existsSync(cDirInd+'/src'))														//Miramos si en el hay otro directorio src
+			if (fs.existsSync(cDirInd+'/src'))															//Miramos si en el hay otro directorio src
 			{
-				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'/src\",'+'\n';							//Si lo hay agragamos el directorio src
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'/src\",'+'\n';								//Si lo hay agragamos el directorio src
 			}else{
-				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'\",'+'\n';								//Si no, el directorio original
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'\",'+'\n';									//Si no, el directorio original
 			}
 		}
 	})
 	return (cDirTot);
-} 
+}
+/**************************
+* Funcion que chekea la exisencia de un directorio
+* 
+* @param cDirectorio.- Directorio que se desea checkear
+* @return Devuelve true si existe el directorio, false en caso contrario
+*/
+async function ChckDirExists (cDirectorio)
+{
+	var lSalida = false;
+	if (fs.existsSync(cDirectorio))
+	{
+		lSalida = true;
+	}
+	return ( lSalida);
+}
 
 async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 {
@@ -54,6 +70,8 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 
 	//const items = fs.readdir("C:\\Users\\Julian\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.6\\tools\\sdk\\include\\");
 	//console.log(items);
+
+
 	var cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/tools/sdk/include/`
 	cListaLib =  await LeeDirectorio(cDirectorio);
 	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/libraries/`
@@ -61,28 +79,19 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/cores/${cPlataforma}/`
 	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
 	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/variants/${cModelo}/`
-	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
-	cDirectorio = `${cDirUsuario}/Documentos/Arduino/libraries/`
+	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);	
+	if (ChckDirExists(`${cDirUsuario}/Documents`))
+	{
+		cDirectorio = `${cDirUsuario}/Documents/Arduino/libraries/`
+	}else{
+		cDirectorio = `${cDirUsuario}/Documentos/Arduino/libraries/`
+	}
 	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
 	cListaLib = cListaLib.substring(0, cListaLib.length-2); 
                     
 	return(cListaLib);
 } 
-function CheckCOM ()
-{
-	var lSalida = false;
-	var cPuerto = BarraEstado.LeeCom();
-	var cBaudios = BarraEstado.LeeBaudios();
-	if ( cPuerto != 'COM' && cBaudios != 'Baudios')
-	{
-		lSalida = true;
-	}	
-	console.log (cPuerto);
-	console.log (cBaudios);
-	console.log('Salida: ');
-	console.log(lSalida);
-	return lSalida;
-}
+
 function CheckBoard()
 {	var lSalida = false;
 	var cBoard = statusBarModelo.text;
@@ -95,7 +104,7 @@ function CheckBoard()
 }
 async function Upload ()
 {
-	if (CheckCOM () == true)
+	if (await port.CheckCOM () == true)
 	{
 		if ( CheckBoard() == true)
 		{
@@ -128,7 +137,7 @@ async function Monitor ()
 {
 	var cPuerto = await BarraEstado.LeeCom();
 	var cBaudios = await BarraEstado.LeeBaudios();
-	if (CheckCOM () == true)
+	if (await port.CheckCOM () == true)
 	{
 		var cTerminal = "arduino-cli monitor -p "+cPuerto+" -c baudrate="+cBaudios+ " -c bits=8 -c parity=none -c stop_bits=1 -c dtr=off -c rts=off"	;																	//Ponemos en la barra de estado la nueva velocidad
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
@@ -281,42 +290,7 @@ async function ModeloPlataforma(cPlataforma) {
 
 	return (aSalida);
 }
-async function ListSerialPort ()
-{
-	const { spawn } = require('node:child_process');
-	const bat = spawn('cmd.exe', ['/c', 'reg query HKLM\\HARDWARE\\DEVICEMAP\\SERIALCOMM']);
-	
-	bat.stderr.on('data', (data) => {
-	  console.error(data.toString());
-	  outChannel.appendLine("2.-");
-	  outChannel.appendLine(data.toString());
-	});
 
-	bat.stdout.on('data', (data) => { 
-		var cPorTxt = data.toString();
-		//console.log(bat);
-		let arrReg = cPorTxt.split("\n");
-		let aPuertos;
-		//if ( arr.indeOf('Device')>0)
-		//{
-		console.log(arrReg.length);
-		//console.log(cPorTxt);
-		console.log("***********");
-		arrReg.forEach(function(cTexto, index) {
-			if (cTexto.indexOf("Device")> 0)
-			{
-				console.log(`${index} : ${cTexto}`);
-				let aCom=cTexto.split("COM");
-				console.log("COM"+aCom[1]);
-				aPuertos.push ("COM"+aCom[1]);
-			}
-		});
-		aPuertos.forEach(function(cPuerto, index){
-			console.log(cPuerto);
-		})
-
-	});	
-}
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -326,6 +300,8 @@ function activate(context) {
 
 	let disposable = vscode.commands.registerCommand("serverpic.new", async () => {
 
+
+	
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
 		const FolderExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;
 		const newReactFolder = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
@@ -344,47 +320,48 @@ function activate(context) {
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
 		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
 		const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
+
+
+		//----------------------------------
+		//Generamos el fichero serverpic.json
+		//----------------------------------
+		let oJson =
+		{
+			"folder": `${newReactFolder}`,
+			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
+			"plataforma": `${aDatosPlataforma[0]}`,
+			"version": `${cVersionPlataforma}`,
+			"board": `${aDatosPlataforma[2]}`,
+			"placa": `${Placa}`,
+			"fqbn": `${aDatosPlataforma[3]}`,
+			"configuration": `${aDatosPlataforma[4]}`,
+			"compilador": `${aDatosPlataforma[5]}`,
+			"dircompilador": `${aDatosPlataforma[6]}`,
+			"output": `${newReactFolder}\\build`,
+			"com": 'COM',
+			"baudios": 'Baudios'
+		};
+
+		Ficheros.SetPathProyecto(DirectorioTrabajo);
+		Ficheros.CreaArchivos(oJson);
+
+		
 		// definimos los ficheros a incluir
-		let TeamCity = vscode.Uri.parse(`${DirectorioTrabajo}/TeamCity.sh`);                                                        // TeamCity.sh
+		                                                       
 		let ino = vscode.Uri.parse(`${DirectorioTrabajo}/${newReactFolder}.ino`);                                                   // Ino
-		let IO = vscode.Uri.parse(`${DirectorioTrabajo}/IO.h`);                                                                     // IO.H
 		let Serverpic = vscode.Uri.parse(`${DirectorioTrabajo}/Serverpic.h`);                                                      // Serverpic.h
 		let boardlist = vscode.Uri.parse(`${DirectorioTrabajo}/boardlist.sh`);                                                      // Serverpic.h
 		let hardware = vscode.Uri.parse(`${DirectorioTrabajo}/hardware`);
-		let serverpicjson = vscode.Uri.parse(`${DirectorioVscode}/serverpic.json`);
 		let compila = vscode.Uri.parse(`${DirectorioTrabajo}/Compila.bat`);
 		let upload = vscode.Uri.parse(`${DirectorioTrabajo}/Upload.bat`);
 		let properties = vscode.Uri.parse(`${DirectorioVscode}/c_cpp_properties.json`);
 		//Creamos un array de los ficheros y los creamos
-		let newFiles = [TeamCity, ino, IO, Serverpic, boardlist, hardware, serverpicjson, compila, upload, properties];                                                                             // Creamos array de ficheros
+		let newFiles = [ ino, Serverpic, boardlist, hardware, compila, upload, properties];                                                                             // Creamos array de ficheros
 		for (const newFile of newFiles) { we.createFile(newFile, { ignoreIfExists: false, overwrite: true }) };
 
-		//-------------------
-		//Fichero TeamCity.sh
-		//-------------------
-		let uriTeamCity = vscode.Uri.file(`${FolderExtension}/Plantillas/TeamCity.s_`);                                           //Establecemos el path de la plantilla TeamCity
-		let oTeamCityTexto = vscode.workspace.openTextDocument(uriTeamCity);                                                      //Cargamos la plantilla TeamCity
-		let TeamCityTexto = ((await oTeamCityTexto).getText());                                                                   //Extraemos el texto de la plantilla    
-		//TeamCityTexto = (TeamCityTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                  //Hacemos los remplazos pertinentes
-		TeamCityTexto = TeamCityTexto.split('#Dispositivo#').join(newReactFolder);												   //Hacemos los remplazos pertinentes
-		we.insert(TeamCity, new vscode.Position(0, 0), TeamCityTexto);                                                             //Grabamos la informacion en TeamCity.sh
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+		                                                   //Cerramos el fichero abierto en workspace
 	
-		//-------------------
-		//Fichero IO.h
-		//-------------------
-		let uriIO = vscode.Uri.file(`${FolderExtension}/Plantillas/IO.h_`);                                                       //Establecemos el path de la plantilla IO
-		let oIOTexto = vscode.workspace.openTextDocument(uriIO);                                                                  //Cargamos la plantilla IO
-		let IOTexto = ((await oIOTexto).getText());                                                                               //Extraemos el texto de la plantilla 
-		IOTexto = IOTexto.split('#Placa#').join(Placa);   																		  //Hacemos los remplazos pertinentes	
-		IOTexto = IOTexto.split('#Dispositivo#').join(newReactFolder); 
-		IOTexto = IOTexto.split('#Fecha#').join(Fecha); 
-//		IOTexto = (IOTexto.toString()).replace('#Placa#', `${Placa}`);                                                             //Hacemos los remplazos pertinentes
-//		IOTexto = (IOTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);
-//		IOTexto = (IOTexto.toString()).replace('#Fecha#', `${Fecha}`);
-		we.insert(IO, new vscode.Position(0, 0), IOTexto);                                                                         //Grabamos la informacion en IO.h
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
- 		
+		
 		//-------------------
 		//Fichero Serverpic.h
 		//-------------------			
@@ -445,6 +422,7 @@ function activate(context) {
 		//----------------------------------
 		//Generamos el fichero serverpic.json
 		//----------------------------------
+		/*
 		let oJson =
 		{
 			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
@@ -457,9 +435,10 @@ function activate(context) {
 			"dircompilador": `${aDatosPlataforma[6]}`,
 			"output": `${newReactFolder}\\build`
 		};
+		
 		let DataJson = JSON.stringify(oJson);
 		we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
-	
+		*/
 		//-------------------
 		//Fichero Compila
 		//-------------------
@@ -524,12 +503,12 @@ function activate(context) {
 		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		statusBarModelo.text=aDatosPlataforma[2];
+		BarraEstado.GrabaBoard(aDatosPlataforma[2]);
 		aBoard = aDatosPlataforma;
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
-		//Compila ();
-		JsonServerpic.DirWork(); 
+		Compila ();
+		
 	});	
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
 		Upload (); 
