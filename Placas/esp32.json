@@ -22,5 +22,18 @@
 				"UploadSpeed":"115200"
 			}
 		}
-    ]
+    ],
+	"librerias":[
+		{
+			"genericas": 	
+				{
+					"include" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/tools/sdk/include/",
+					"librerias" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/libraries/",
+					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/cores/esp32/",
+					"variants" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/variants/#modelo#/"
+				}				
+			
+		}
+	]
+
 } 

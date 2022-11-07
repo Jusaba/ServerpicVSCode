@@ -64,8 +64,8 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 	var cListaLib = '';
 	/*
 	const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-	const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
-	const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
+	const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
+	const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
 	*/
 
 	//const items = fs.readdir("C:\\Users\\Julian\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.6\\tools\\sdk\\include\\");
@@ -92,10 +92,10 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 	return(cListaLib);
 } 
 
-function CheckBoard()
+function CheckModelo()
 {	var lSalida = false;
-	var cBoard = statusBarModelo.text;
-	if ( cBoard != 'Board')
+	var cModelo = BarraEstado.LeeModelo();
+	if ( cModelo != 'Modelo')
 	{
 		lSalida = true;
 	}
@@ -106,12 +106,12 @@ async function Upload ()
 {
 	if (await port.CheckCOM () == true)
 	{
-		if ( CheckBoard() == true)
+		if ( CheckModelo() == true)
 		{
 			var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
 			var aTexto = cPath.split('/');
 			var cFile = aTexto[aTexto.length-1]+".ino.bin";
-			var cUpload = `arduino-cli upload -p ${statusBarCom.text} -b ${aBoard[3]} -i build/`+cFile;
+			var cUpload = `arduino-cli upload -p ${await BarraEstado.LeeCom()} -b ${aBoard[3]} -i build/`+cFile;
 			vscode.commands.executeCommand('workbench.action.terminal.focus');
 			vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cUpload  +'\n' });
 		}else{
@@ -124,7 +124,7 @@ async function Upload ()
 async function Compila()
 {
 
-	if (CheckBoard () == true)
+	if (CheckModelo () == true)
 	{
 		var cCompila = `arduino-cli compile -b ${aBoard[3]}:${aBoard[4]} --build-path build -e -v `;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
@@ -303,51 +303,27 @@ function activate(context) {
 
 	
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
-		const FolderExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;
-		const newReactFolder = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
+		const cDispositivo = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
 		const Placa = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
 
-		//Seleccionamos plataforma y determinamos la version del compilador instalado
-		let cPlataforma = await Plataforma();
-		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
-		//Seleccionamos el modelo de placa
-		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		let cModelo = aDatosPlataforma[2];
 
 		let Fecha = new Date();
 		Fecha = Fecha.toLocaleDateString();
 		const we = new vscode.WorkspaceEdit();
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-		const DirectorioTrabajo = `${thisWorkspace}/${newReactFolder}`;
-		const DirectorioVscode = `${thisWorkspace}/${newReactFolder}/.vscode`;
+		const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
+		const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
 
 
-		//----------------------------------
-		//Generamos el fichero serverpic.json
-		//----------------------------------
-		let oJson =
-		{
-			"folder": `${newReactFolder}`,
-			"sketch": `${newReactFolder}\\${newReactFolder}.ino`,
-			"plataforma": `${aDatosPlataforma[0]}`,
-			"version": `${cVersionPlataforma}`,
-			"board": `${aDatosPlataforma[2]}`,
-			"placa": `${Placa}`,
-			"fqbn": `${aDatosPlataforma[3]}`,
-			"configuration": `${aDatosPlataforma[4]}`,
-			"compilador": `${aDatosPlataforma[5]}`,
-			"dircompilador": `${aDatosPlataforma[6]}`,
-			"output": `${newReactFolder}\\build`,
-			"com": 'COM',
-			"baudios": 'Baudios'
-		};
+		let oJson = await JsonServerpic.CreaJson(cDispositivo, Placa);
+
 
 		Ficheros.SetPathProyecto(DirectorioTrabajo);
 		Ficheros.CreaArchivos(oJson);
 
 		
 		// definimos los ficheros a incluir
-		                                                       
+/*		                                                       
 		let properties = vscode.Uri.parse(`${DirectorioVscode}/c_cpp_properties.json`);
 		//Creamos un array de los ficheros y los creamos
 		let newFiles = [ properties];                                                                             // Creamos array de ficheros
@@ -359,12 +335,12 @@ function activate(context) {
 		                                            //Cerramos el fichero abierto en workspace
 
 
-	
+*/	
 
 		//-------------------
 		//Fichero c_cpp_properties
 		//-------------------
-		let cDirUsuario = (`${cUsuario}`.toString()).replace('\\', '/');
+/*		let cDirUsuario = (`${cUsuario}`.toString()).replace('\\', '/');
 		cDirUsuario = (cDirUsuario.toString()).replace('\\', '/');
 		let cDirectoriosLib = await Create_Intellisense (aDatosPlataforma[2], cDirUsuario, aDatosPlataforma[0], cVersionPlataforma);
 		let uriProperties = vscode.Uri.file(`${FolderExtension}/Plantillas/c_cpp_properties.jso_`);                                                 //Establecemos el path de la plantilla TeamCity
@@ -383,7 +359,7 @@ function activate(context) {
 
 		await vscode.workspace.applyEdit(we);                                                                                       // apply all the edits: file creation and adding text
 		for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
-		
+*/		
 		//for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
 
 		//vscode.commands.executeCommand('workbench.action.closeFolder');
@@ -410,16 +386,17 @@ function activate(context) {
 	let disposable3 = vscode.commands.registerCommand("serverpic.BaudiosSel", async () => {
 		await port.BaudioSel (); 
 	});	
-	let disposable4 = vscode.commands.registerCommand("serverpic.BoardSel", async () => {
+	let disposable4 = vscode.commands.registerCommand("serverpic.ModeloSel", async () => {
 		let cPlataforma = await Plataforma();
 		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
 		//Seleccionamos el modelo de placa
 		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		BarraEstado.GrabaBoard(aDatosPlataforma[2]);
+		BarraEstado.GrabaModelo(aDatosPlataforma[2]);
 		aBoard = aDatosPlataforma;
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
-		Compila ();
+		//Compila ();
+		JsonServerpic.GrabaParamJson('PathCompilador', 'c:/user');
 		
 	});	
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {

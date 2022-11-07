@@ -11,8 +11,17 @@
 *******************************************************/
 'use strict';
 const vscode = require("vscode")
-
 const fs = require('fs');
+
+
+const iPlataforma = 0;
+const iVersion = 1;
+const iMdolo = 2;
+const iFqbn = 3;
+const iConfiguracion = 4;
+const iCompilador = 5;
+const iDirCompilador = 6;
+
 
 //Determinamos path del directorio de tarabjao
 const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
@@ -20,7 +29,207 @@ var DirectorioTrabajo = `${thisWorkspace}`;
 DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('%20', ` `);			//Cambiamos el %20 por espacio
 DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('file:///', ``);		//Quitamos el texto 'file///'
 DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('%3A', ':');			//Quitamos el '%3A' por ':'
+console.log('--------------> '+DirectorioTrabajo);
 
+/**************************
+* Funcion que presenta las plataformas instaladas
+* 
+* El listado de plataformas se almacena en .vscode\Plataformas.json
+*/
+async function Plataforma() {
+	const cUsuario = require('os').homedir();
+	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
+
+	let aPlataformas = [];
+	let JsonPlatforms = fs.readFileSync(`${cPathExtension}\\Placas\\Plataformas.json`);
+	let oPlataformas = JSON.parse(JsonPlatforms);
+	// Array con las plataformas almacenadas en Plataformas.json
+	oPlataformas.Plataformas.forEach(element => {
+		aPlataformas.push(element.name);
+	});
+	//Seleccion plataforma
+	const quickPick = await vscode.window.showQuickPick(aPlataformas, { canPickMany: false, placeHolder: 'Seleccionar Plataforma' });
+	return (`${quickPick}`);
+
+}
+
+/**************************
+* Funcion que devuelve la version instalada de una plataforma
+* 
+* @param cPlataforma.- Plataforma seleccionada en la funcion Plataforma() 
+* @return Devuelve la version isntalada de la plataforma seleccionada
+*
+* Busca en el directorio donde esta instalada la plataforma y con un dir, extrae la version isntalada  
+*
+*/
+async function VersionPlataforma(cPlataforma) 
+{
+	const cUsuario = require('os').homedir();
+	const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
+
+
+	const Directorioesp8266 = `${DirectorioPackages}\\esp8266\\hardware\\esp8266`;
+	const Directorioarduino = `${DirectorioPackages}\\arduino\\hardware\\avr`;
+	const Directorioesp32 = `${DirectorioPackages}\\esp32\\hardware\\esp32`;
+	//En funcion de la plataforma seleccionada, accedemos a su directorio y leemos el nombre de la carpeta que contiene la paltaforma 
+	let cVersion = '';
+	switch (cPlataforma) {
+		case 'arduino':
+			cVersion = fs.readdirSync(`${Directorioarduino}`);
+			break;
+		case 'esp8266':
+			cVersion = fs.readdirSync(`${Directorioesp8266}`);
+			break;
+		case 'esp32':
+			cVersion = fs.readdirSync(`${Directorioesp32}`);
+			break;
+	}
+	return (`${cVersion}`);
+}
+/**************************
+* Funcion para seleccionar el modelo de chip  deseado dentro de la plataforma
+*
+* @param cPlataforma.- Plataforma seleccionada
+*
+* @return Devuelve un array con tres elementos
+*				
+*				[0].- Plataforma
+*				[1].- Version de la plataforma	
+*				[2].- Nombre del modelo de chip seleccionado
+*				[3].- fqbn del modelo seleccionado
+*				[4].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
+* 				[5].- Compilador
+*				[6].- Directorio compilacion
+*
+*/
+async function DatosPlataforma(cPlataforma) {
+	const cUsuario = require('os').homedir();
+	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
+	let aSalida = [];
+	let aModelos = [];
+	//Abrimos el fichero json con los chip  de la plataforma seleccionada
+	let JsonBoards = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
+	let oBoards = JSON.parse(JsonBoards);
+	aSalida.push(cPlataforma);
+	aSalida.push(VersionPlataforma(cPlataforma));
+	//Hacemos un array con los modelos de chip de la plataforma almacenados en el fichero
+	oBoards.Boards.forEach(element => {
+		aModelos.push(element.name);
+	});
+	//Seleccionamos un chip
+	const quickPick = await vscode.window.showQuickPick(aModelos, { canPickMany: false, placeHolder: 'Seleccionar modelo' });
+	//Añadimos al array de salida el modelo de chip
+	aSalida.push(quickPick);
+	//Recorremos el json con las chip  
+	for (var nPosicion in oBoards.Boards) {
+		//cuando encontramos el bloque correpondiente al modelo seleccionado
+		if (oBoards.Boards[nPosicion].name == quickPick) {
+			let oJsonConfiguracion = oBoards.Boards[nPosicion].configuracion;
+
+			//Añadimos al arrau de salida el fqbn
+			aSalida.push(oBoards.Boards[nPosicion].configuracion.fqbn);
+			//generamos la variable configuracion con todos los parametros de configuracion para la compilacion
+			let cConfiguracion = '';
+			if (oJsonConfiguracion["xtal"]) { cConfiguracion = cConfiguracion + `xtal=${oJsonConfiguracion.xtal},`; }
+			if (oJsonConfiguracion["vt"]) { cConfiguracion = cConfiguracion + `vt=${oJsonConfiguracion.vt},`; }
+			if (oJsonConfiguracion["exception"]) { cConfiguracion = cConfiguracion + `exception=${oJsonConfiguracion.exception},`; }
+			if (oJsonConfiguracion["ssl"]) { cConfiguracion = cConfiguracion + `ssl=${oJsonConfiguracion.ssl},`; }
+			if (oJsonConfiguracion["ResetMethod"]) { cConfiguracion = cConfiguracion + `ResetMethod=${oJsonConfiguracion.ResetMethod},`; }
+			if (oJsonConfiguracion["CrystalFreq"]) { cConfiguracion = cConfiguracion + `CrystalFreq=${oJsonConfiguracion.CrystalFreq},`; }
+			if (oJsonConfiguracion["FlashFreq"]) { cConfiguracion = cConfiguracion + `FlashFreq=${oJsonConfiguracion.FlashFreq},`; }
+			if (oJsonConfiguracion["FlashMode"]) { cConfiguracion = cConfiguracion + `FlashMode=${oJsonConfiguracion.FlashMode},`; }
+			if (oJsonConfiguracion["eesz"]) { cConfiguracion = cConfiguracion + `eesz=${oJsonConfiguracion.eesz},`; }
+			if (oJsonConfiguracion["sdk"]) { cConfiguracion = cConfiguracion + `sdk=${oJsonConfiguracion.sdk},`; }
+			if (oJsonConfiguracion["ip"]) { cConfiguracion = cConfiguracion + `ip=${oJsonConfiguracion.ip},`; }
+			if (oJsonConfiguracion["dbg"]) { cConfiguracion = cConfiguracion + `dbg=${oJsonConfiguracion.dbg},`; }
+			if (oJsonConfiguracion["lvl"]) { cConfiguracion = cConfiguracion + `lvl=${oJsonConfiguracion.lvl},`; }
+			if (oJsonConfiguracion["wipe"]) { cConfiguracion = cConfiguracion + `wipe=${oJsonConfiguracion.wipe},`; }
+			if (oJsonConfiguracion["baud"]) { cConfiguracion = cConfiguracion + `baud=${oJsonConfiguracion.baud},`; }
+			if (oJsonConfiguracion["PartitionScheme"]) { cConfiguracion = cConfiguracion + `PartitionScheme=${oJsonConfiguracion.PartitionScheme},`; }
+			if (oJsonConfiguracion["DebugLevel"]) { cConfiguracion = cConfiguracion + `DebugLevel=${oJsonConfiguracion.DebugLevel},`; }
+			if (oJsonConfiguracion["UploadSpeed"]) { cConfiguracion = cConfiguracion + `UploadSpeed=${oJsonConfiguracion.UploadSpeed},`; }
+
+			cConfiguracion = cConfiguracion.substring(0, cConfiguracion.length - 1);
+			//Añadimos al array de salida el string con la configuracion
+			aSalida.push(cConfiguracion);
+		}
+	}
+	switch (cPlataforma) {
+		case 'arduino':
+//Pendiente----------------------------------------------------------------------------------------------------------------------
+//******************************************************************************************************************************* */
+			break;
+		case 'esp8266':
+			aSalida.push('xtensa-lx106-elf-g++')
+			aSalida.push('xtensa-lx106-elf-gcc/2.5.0-4-b40a506')
+			break;
+		case 'esp32':
+			aSalida.push('xtensa-esp32-elf-gcc')
+			aSalida.push('xtensa-esp32-elf-gcc/1.22.0-97-gc752ad5-5.2.0')
+			break;
+	}
+
+	return (aSalida);
+}
+/**************************
+* Funcion que genera el json de configuracion del proyecto
+* 
+* @param cDispositivo.- Nombre del dispositivo
+* @param cPlaca.- Npombre de la placa
+*
+* @return Devuelve el objeto Json de configuracion
+*/
+exports.CreaJson = async function ( cDispositivo,  cPlaca )
+{
+		//Seleccionamos plataforma y determinamos la version del compilador instalado
+		const cPlataforma = await Plataforma();
+		const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
+
+		const aDatosPlataforma = await DatosPlataforma(cPlataforma);
+		const cUsuario = require('os').homedir();
+
+		const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
+
+		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
+		const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
+		const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
+	
+		let oJson =
+		{
+			"dispositivo": cDispositivo,
+			"folder": cDispositivo,
+			"sketch": cDispositivo+'\\'+cDispositivo+'.ino',
+			"plataforma": cPlataforma,
+			"version": cVersionPlataforma,
+			"modelo": aDatosPlataforma[iMdolo],
+			"placa": cPlaca,
+			"fqbn": aDatosPlataforma[iFqbn],
+			"configuration": aDatosPlataforma[iConfiguracion],
+			"compilador": aDatosPlataforma[iCompilador],
+			"com": 'COM',
+			"baudios": 'Baudios', 
+			"directorios":
+			[
+				{
+					"dirtrabajo" : DirectorioTrabajo,
+					"dirvscode" : DirectorioVscode,		
+					"diroutput" : DirectorioTrabajo + '/build',
+					"dircompilador" : aDatosPlataforma[iDirCompilador]
+				}	
+			]
+		};
+		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
+		let oModelo = JSON.parse(JsonModelo);
+		console.log (oModelo);
+		let oLibreriasGenericas =  oModelo.librerias[0].genericas;
+		console.log("Siiiiiiiiiiiiiiiiiiiiiiiiiiiii");
+		console.log  (oLibreriasGenericas.include);
+		console.log  (oLibreriasGenericas.librerias);
+		console.log  (oLibreriasGenericas.cores);
+		console.log  (oLibreriasGenericas.variants);
+
+		return(oJson);
+}
 /**************************
 * Funcion que lee un el json del fichero .vscode/serverpic.json de la carpeta de trabajo
 * 
@@ -75,8 +284,8 @@ exports.LeeParamJson = async function (cParametro)
 		case 'version':
 			cDato = oJson.version;
 			break;
-		case 'board':
-			cDato = oJson.board;
+		case 'modelo':
+			cDato = oJson.modelo;
 			break;
 		case 'fqbn':
 			cDato = oJson.fqbn;
@@ -123,7 +332,7 @@ exports.GrabaParamJson = async function (cParametro, cValor)
 			oJson.version = cValor;
 			break;
 		case 'board':
-			oJson.board = cValor;
+			oJson.modelo = cValor;
 			break;
 		case 'fqbn':
 			oJson.fqbn = cValor;
@@ -146,7 +355,10 @@ exports.GrabaParamJson = async function (cParametro, cValor)
 		case 'baudios':
 			oJson.baudios = cValor;
 			break;						
+		default :
+			oJson[cParametro]=cValor;
 	}
+	console.log('----- '+DirectorioTrabajo+' --------')
 	await GrabaServerpicJson (oJson);
 
 }	

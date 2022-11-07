@@ -42,6 +42,8 @@ exports.SetPathProyecto = async function (cPath)
 exports.CreaArchivos = async function (oJsonProyecto)
 {
     oJson = oJsonProyecto;
+    console.log ('--------------');
+    console.log (oJson);
     //await vscode.workspace.applyEdit(we);   
     await CreaIO();
     await CreaTeamCity();
@@ -125,7 +127,7 @@ async function CreaServerpic ()
     let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                    //Cargamos la plantilla Serverpic
     let ServerpicTexto = ((await oServerpicTexto).getText());           													  //Extraemos el texto de la plantilla	
 	ServerpicTexto = ServerpicTexto.split('#Placa#').join(oJson.placa); 															  //Hacemos los remplazos pertinentes 	
-	ServerpicTexto = ServerpicTexto.split('#Modelo#').join(oJson.board);
+	ServerpicTexto = ServerpicTexto.split('#Modelo#').join(oJson.Modelo);
 	ServerpicTexto = ServerpicTexto.split('#Dispositivo#').join(oJson.folder);
 	ServerpicTexto = ServerpicTexto.split('#Fecha#').join(Fecha);
 	ServerpicTexto = ServerpicTexto.split('#Ino#').join(oJson.folder);    
@@ -142,7 +144,7 @@ async function CreaServerpic ()
 * Como parametro utiliza la variable global  oJson con el json del proyecto
 */
 async function CreaIno ()
-{
+{    
     let Ino = vscode.Uri.parse(`${cPathProyecto}/${oJson.folder}.ino`);
     we.createFile(Ino, { ignoreIfExists: false, overwrite: true });
     let uriIno = vscode.Uri.file(`${cPathExtension}/Plantillas/Ino.in_`);                                                    //Establecemos el path de la plantilla TeamCity
@@ -224,5 +226,25 @@ async function CreaUpload ()
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     await vscode.workspace.applyEdit(we);
     let document = await vscode.workspace.openTextDocument(Upload); 
+    await document.save(); 	
+}
+/**************************
+* Funcion que crea el fichero boardlist.sh
+*
+* Como parametro utiliza la variable global  oJson con el json del proyecto
+*/
+async function CreaProperties ()
+{
+    let Properties = vscode.Uri.parse(`${cPathProyecto}/.vscode/c_cpp_properties.json`);
+    we.createFile(Properties, { ignoreIfExists: false, overwrite: true });
+	let uriProperties = vscode.Uri.file(`${cPathExtension}/Plantillas/c_cpp_properties.js_`);                                                    //Establecemos el path de la plantilla TeamCity
+	let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                                               //Cargamos la plantilla TeamCity
+	let PropertiesTexto = ((await oPropertiesTexto).getText());                                                                             //Extraemos el texto de la plantilla    
+
+
+    we.insert(Properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
+	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    await vscode.workspace.applyEdit(we);  
+    let document = await vscode.workspace.openTextDocument(Properties); 
     await document.save(); 	
 }

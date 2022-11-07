@@ -58,8 +58,8 @@
 				"title": "Serverpic Select Baudios"
 			},
 			{
-				"command": "serverpic.BoardSel",
-				"title": "Serverpic Select Board"
+				"command": "serverpic.ModeloSel",
+				"title": "Serverpic Select Model"
 			}						
 		],
 		

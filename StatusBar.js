@@ -56,13 +56,13 @@ exports.StatusBarServerpic = async function  ()
 	statusBarBaudios.show();			
 
 	//Barra modelo micro
-	let myCommandBoardSel = {};
-	myCommandBoardSel.title = 'SerialBoardSel';
-	myCommandBoardSel.command = 'serverpic.BoardSel';
+	let myCommandModeloSel = {};
+	myCommandModeloSel.title = 'ModeloSel';
+	myCommandModeloSel.command = 'serverpic.ModeloSel';
 
-	statusBarModelo.text = "Board";
-	statusBarModelo.command = myCommandBoardSel;
-	statusBarModelo.tooltip = "Selecciona Board",
+	statusBarModelo.text = "Modelo";
+	statusBarModelo.command = myCommandModeloSel;
+	statusBarModelo.tooltip = "Selecciona Modelo",
 	statusBarModelo.show();			
 }
 /**************************
@@ -82,7 +82,7 @@ exports.LeeBaudios = async function ()
 /**************************
 * Devuelve el dato de Board resgistrado en la barra de estado
 */
-exports.LeeBoard = async function ()
+exports.LeeModelo = async function ()
 {
     return (statusBarModelo.text);
 }
@@ -107,10 +107,10 @@ exports.GrabaBaudios = async function (cBaudios)
 /**************************
 * Registra la Boars en la barra de estado y la graba en .vscode/serverpic.json
 */
-exports.GrabaBoard = async function (cBoard)
+exports.GrabaModelo = async function (cModelo)
 {
-    statusBarModelo.text = cBoard;
-	JsonServerpic.GrabaParamJson('board', cBoard);
+    statusBarModelo.text = cModelo;
+	JsonServerpic.GrabaParamJson('modelo', cModelo);
     statusBarModelo.show();
 }
 /**************************
@@ -128,9 +128,9 @@ exports.ShowBaudios = async function ()
     return (statusBarBaudios.show());
 }
 /**************************
-* Visualiza la barra de estado Board
+* Visualiza la barra de estado Modelo
 */
-exports.ShowBoard = async function ()
+exports.ShowModelo = async function ()
 {
     return (statusBarModelo.show());
 }
