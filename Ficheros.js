@@ -10,10 +10,7 @@
 *
 * 
 *******************************************************/
-const { Console } = require("console");
-const vscode = require("vscode")
-const JsonServerpic = require('./ServerpicJson.js');
-
+const vscode = require("vscode");
 const we = new vscode.WorkspaceEdit();
 
 var cPathProyecto;
@@ -25,97 +22,92 @@ const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;
 var oJson;
 
 /**************************
-* Funcion que asigna al modulo de ficheros el path del proyecto
-* 
-* @param cPath.- Path del proyectto
+* Funcion que transforma path de dirextorio en path para file
+* cambi %20 por espacio, %3A por : .....
+* @param cDirectorio.- Nombre del directorio que se quiere convertir
+*
+* @return.- Devuelve el path del file
 */
-exports.SetPathProyecto = async function (cPath)
+function PathDirToFile ( cDirectorio )
 {
-    cPathProyecto = cPath;
+	cPath = cDirectorio.split(':').join('%3A');
+	cPath = cPath.split(' ').join('%20');
+	var cPath = 'file:///'+cPath;
+	return (cPath);
 }
 /**************************
 * Funcion que crea los distintos ficheros del proyecto
 * 
-* @param oJsonProyecto.- Json con la configuracion del proyecto
+* utiliza .vscode/serverpic.json
 * Esa configuracion se almacena en .vscode/serverpic.json
 */
-exports.CreaArchivos = async function (oJsonProyecto)
+exports.CreaArchivos = async function (oServerpicJson)
 {
-    oJson = oJsonProyecto;
-    console.log ('--------------');
-    console.log (oJson);
+    oJson = oServerpicJson;
+    cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;
+    cPathProyecto = PathDirToFile(cPathProyecto);
+
+     var aFicheros = []
+
     //await vscode.workspace.applyEdit(we);   
-    await CreaIO();
-    await CreaTeamCity();
-    await CreaServerpicJson();
-    await CreaServerpic();
-    await CreaIno();
-    await CreaBoardList();
-    await CreaHardware();
-    await CreaCompila();
-    await CreaUpload();
+
+    aFicheros.push(await CreaIO());
+    aFicheros.push(await CreaTeamCity());
+    aFicheros.push(await CreaServerpic());
+    aFicheros.push(await CreaIno());  
+    aFicheros.push(await CreaBoardList());
+    aFicheros.push(await CreaHardware());
+    aFicheros.push(await CreaCompila());
+    aFicheros.push(await CreaUpload());
+
+await vscode.workspace.applyEdit(we);
+for (const Fichero of aFicheros) { let document = await vscode.workspace.openTextDocument(Fichero); await document.save(); };
 }
 /**************************
 * Funcion que crea el fichero IO.h
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaIO()
 {
     let IO = vscode.Uri.parse(`${cPathProyecto}/IO.h`);
     we.createFile(IO, { ignoreIfExists: false, overwrite: true });
     let uriIO = vscode.Uri.file(`${cPathExtension}/Plantillas/IO.h_`);                                                       //Establecemos el path de la plantilla IO
-    let oIOTexto = vscode.workspace.openTextDocument(uriIO);                                                                  //Cargamos la plantilla IO
-    let IOTexto = ((await oIOTexto).getText());                                                                               //Extraemos el texto de la plantilla 
+    let oIOTexto = await vscode.workspace.openTextDocument(uriIO);                                                                  //Cargamos la plantilla IO
+    let IOTexto =  await oIOTexto.getText();                                                                               //Extraemos el texto de la plantilla 
     IOTexto = IOTexto.split('#Placa#').join(oJson.placa);   																		  //Hacemos los remplazos pertinentes	
     IOTexto = IOTexto.split('#Dispositivo#').join(oJson.folder); 
     IOTexto = IOTexto.split('#Fecha#').join(Fecha); 
     we.insert(IO, new vscode.Position(0, 0), IOTexto);     
-    vscode.commands.executeCommand('workbench.action.closeActiveEditor'); 
-    await vscode.workspace.applyEdit(we);
-    let document = await vscode.workspace.openTextDocument(IO); 
-    await document.save(); 
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor'); 
+    return (IO);
 } 
 /**************************
 * Funcion que crea el fichero TeamCity.sh
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaTeamCity ()
 {
     let TeamCity = vscode.Uri.parse(`${cPathProyecto}/TeamCity.sh`);
     we.createFile(TeamCity, { ignoreIfExists: false, overwrite: true });
 	let uriTeamCity = vscode.Uri.file(`${cPathExtension}/Plantillas/TeamCity.s_`);                                           //Establecemos el path de la plantilla TeamCity
-	let oTeamCityTexto = vscode.workspace.openTextDocument(uriTeamCity);                                                      //Cargamos la plantilla TeamCity
+	let oTeamCityTexto = await vscode.workspace.openTextDocument(uriTeamCity);                                                      //Cargamos la plantilla TeamCity
 	let TeamCityTexto = ((await oTeamCityTexto).getText());                                                                   //Extraemos el texto de la plantilla    
 	//TeamCityTexto = (TeamCityTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                  //Hacemos los remplazos pertinentes
 	TeamCityTexto = TeamCityTexto.split('#Dispositivo#').join(oJson.folder);;												   //Hacemos los remplazos pertinentes
 	we.insert(TeamCity, new vscode.Position(0, 0), TeamCityTexto);                                                             //Grabamos la informacion en TeamCity.sh
-	vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
-    await vscode.workspace.applyEdit(we);   
-    let document = await vscode.workspace.openTextDocument(TeamCity); 
-    await document.save(); 	
+	await vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+    return(TeamCity);
 }
-/**************************
-* Funcion que crea el fichero .vscode/serverpic.json
-*
-* Como parametro utiliza la variable global  oJson con el json del proyecto
-*/
-async function CreaServerpicJson ()
-{
-    let serverpicjson = vscode.Uri.parse(`${cPathProyecto}/.vscode/serverpic.json`);
-    we.createFile(serverpicjson, { ignoreIfExists: false, overwrite: true });
-    let DataJson = JSON.stringify(oJson);
-    we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
-	vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
-    await vscode.workspace.applyEdit(we);   
-    let document = await vscode.workspace.openTextDocument(serverpicjson); 
-    await document.save(); 	
-}
+
 /**************************
 * Funcion que crea el fichero Serverpic.h
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 //-------------------
 async function CreaServerpic ()
@@ -124,7 +116,7 @@ async function CreaServerpic ()
     let Serverpic = vscode.Uri.parse(`${cPathProyecto}/Serverpic.h`);
     we.createFile(Serverpic, { ignoreIfExists: false, overwrite: true });
     let uriServerpic = vscode.Uri.file(`${cPathExtension}/Plantillas/Serverpic.h_`);                                         //Establecemos el path de la plantilla Serverpic
-    let oServerpicTexto = vscode.workspace.openTextDocument(uriServerpic);                                                    //Cargamos la plantilla Serverpic
+    let oServerpicTexto = await vscode.workspace.openTextDocument(uriServerpic);                                                    //Cargamos la plantilla Serverpic
     let ServerpicTexto = ((await oServerpicTexto).getText());           													  //Extraemos el texto de la plantilla	
 	ServerpicTexto = ServerpicTexto.split('#Placa#').join(oJson.placa); 															  //Hacemos los remplazos pertinentes 	
 	ServerpicTexto = ServerpicTexto.split('#Modelo#').join(oJson.Modelo);
@@ -133,15 +125,14 @@ async function CreaServerpic ()
 	ServerpicTexto = ServerpicTexto.split('#Ino#').join(oJson.folder);    
 	ServerpicTexto = ServerpicTexto.split('#Core#').join(oJson.version);                                                      
 	we.insert(Serverpic, new vscode.Position(0, 0), ServerpicTexto);                                                           //Grabamos la informacion en Serverpic.h
-	vscode.commands.executeCommand('workbench.action.closeActiveEditor');         
-    await vscode.workspace.applyEdit(we);   
-    let document = await vscode.workspace.openTextDocument(Serverpic); 
-    await document.save(); 	
+	await vscode.commands.executeCommand('workbench.action.closeActiveEditor');         
+    return(Serverpic);
 }        
 /**************************
 * Funcion que crea el fichero ino
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaIno ()
 {    
@@ -152,21 +143,16 @@ async function CreaIno ()
 	let InoTexto = ((await oInoTexto).getText());                                                                             //Extraemos el texto de la plantilla   
 	InoTexto = InoTexto.split('#Dispositivo#').join(oJson.folder);                                                          //Hacemos los remplazos pertinentes
 	InoTexto = InoTexto.split('#Fecha#').join(Fecha); 
-	//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           //Hacemos los remplazos pertinentes
-	//InoTexto = (InoTexto.toString()).replace('#Dispositivo#', `${newReactFolder}`);                                           
-	//InoTexto = (InoTexto.toString()).replace('#Fecha#', `${Fecha}`);
 	we.insert(Ino, new vscode.Position(0, 0), InoTexto);                                                                       //Grabamos la informacion en el prigrama ino
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
-    await vscode.workspace.applyEdit(we);   
-    let document = await vscode.workspace.openTextDocument(Ino); 
-    await document.save(); 	
-
+    return (Ino);
 }
 
 /**************************
 * Funcion que crea el fichero boardlist.sh
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaBoardList ()
 {
@@ -179,14 +165,13 @@ async function CreaBoardList ()
 	BoardlistTexto = BoardlistTexto.split('#Fecha#').join(Fecha);
 	we.insert(Boardlist, new vscode.Position(0, 0), BoardlistTexto);                                                                       //Grabamos la informacion en el prigrama ino
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    await vscode.workspace.applyEdit(we);  
-    let document = await vscode.workspace.openTextDocument(Boardlist); 
-    await document.save(); 	
+    return(Boardlist);
 }
 /**************************
 * Funcion que crea el fichero hardware
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaHardware ()
 {
@@ -194,14 +179,13 @@ async function CreaHardware ()
     we.createFile(Hardware, { ignoreIfExists: false, overwrite: true });
     we.insert(Hardware, new vscode.Position(0, 0), oJson.placa);
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    await vscode.workspace.applyEdit(we);
-    let document = await vscode.workspace.openTextDocument(Hardware); 
-    await document.save(); 	
+    return(Hardware);
 }
 /**************************
 * Funcion que crea el fichero Compila
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaCompila ()
 {
@@ -209,14 +193,13 @@ async function CreaCompila ()
     we.createFile(Compila, { ignoreIfExists: false, overwrite: true });
     we.insert(Compila, new vscode.Position(0, 0), `arduino-cli compile -b ${oJson.fqbn}:${oJson.configuration} --build-path %~d0%~p0build -e -v `);
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    await vscode.workspace.applyEdit(we);
-    let document = await vscode.workspace.openTextDocument(Compila); 
-    await document.save(); 	
+    return(Compila);
 }
 /**************************
 * Funcion que crea el fichero Compila
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaUpload ()
 {
@@ -224,14 +207,13 @@ async function CreaUpload ()
     we.createFile(Upload, { ignoreIfExists: false, overwrite: true });
     we.insert(Upload, new vscode.Position(0, 0), `arduino-cli upload -p %1 -b ${oJson.fqbn} -i %~d0%~p0build/${oJson.fqbn}/${oJson.folder}.ino.bin `);
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    await vscode.workspace.applyEdit(we);
-    let document = await vscode.workspace.openTextDocument(Upload); 
-    await document.save(); 	
+    return(Upload);
 }
 /**************************
 * Funcion que crea el fichero boardlist.sh
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
+* @param Retorna el puntero al fichero
 */
 async function CreaProperties ()
 {
@@ -244,7 +226,5 @@ async function CreaProperties ()
 
     we.insert(Properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    await vscode.workspace.applyEdit(we);  
-    let document = await vscode.workspace.openTextDocument(Properties); 
-    await document.save(); 	
+    return(Properties);
 }

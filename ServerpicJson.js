@@ -8,11 +8,29 @@
 *
 * Se exportan las funciones para leer un parametro del json del fichero y para guardar un valor en cualquier parametro del json del fichero
 * 
+* Funciones exportadas
+*
+* async CreaJson (cDispoitivo, cPlaca).- Crea el Json del proyecto
+* async GetJson ().- Devuelve el json del fichero .vscod/serverpic.json
+* async GrabaServerpicJson (oJson).- Graba oJson en le fichero EXISTENTE .vscode/serverpic.json
+* async LeeParamJson (cParametro).- Lee el fichero .vscode/serverpic.json y devuelve el valor del indicador cParametro
+* async GrabaParamJson (cParametro, cValor).- Lee .vscode/serverpic.json y grava en el identificador cParametro el valor cValor
+*                                       Si no existe el identificador, lo añade como nuevo y vuelve a grabar el fichero .vscode/serverpic.json
+* async CreaServerpicJson (oJson).- Crea el ficheor INEXISTENTE .vscode/serverpic.json
+*
+* Funciones internas 
+* async function Plataforma() .- Presenta las plataformas instaladas y deja seleccionar una
+* async function VersionPlataforma(cPlataforma) .- Devuelve la version instalada de la plataforma
+* async DatosPlataforma (cPlataforma ). Permite seleccionar el modelo de chip de la plataforma
+*                                       Devuelve un array con datos de plataforma, version, chip, fqbn, parmetros de configuracion
+*                                       compilador y direccion del compilador 
+* PathFileToDir().- Convierte path de file a directorio
+* PathDirToFile().- Convierte pat de directorio a path de file
 *******************************************************/
 'use strict';
 const vscode = require("vscode")
 const fs = require('fs');
-
+const we = new vscode.WorkspaceEdit();
 
 const iPlataforma = 0;
 const iVersion = 1;
@@ -24,13 +42,36 @@ const iDirCompilador = 6;
 
 
 //Determinamos path del directorio de tarabjao
-const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-var DirectorioTrabajo = `${thisWorkspace}`;
-DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('%20', ` `);			//Cambiamos el %20 por espacio
-DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('file:///', ``);		//Quitamos el texto 'file///'
-DirectorioTrabajo = (DirectorioTrabajo.toString()).replace('%3A', ':');			//Quitamos el '%3A' por ':'
-console.log('--------------> '+DirectorioTrabajo);
 
+var DirectorioTrabajo;
+/**************************
+* Funcion que trasnforma un path de file a directorio
+* cambia %20 por espacio, %3A por : .....
+* @param cDirectorio.- Nombre del path file que se quiere convertir
+*
+* @return.- Devuelve el directorio depurado
+*/
+function PathFileToDir ( cFIle )
+{
+	var cPath = (cFIle.toString()).replace('file:///', ``)
+	cPath = cPath.split('%20').join(' ');
+	cPath = cPath.split('%3A').join(':');
+	return(cPath)
+}
+/**************************
+* Funcion que transforma path de dirextorio en path para file
+* cambi %20 por espacio, %3A por : .....
+* @param cDirectorio.- Nombre del directorio que se quiere convertir
+*
+* @return.- Devuelve el path del file
+*/
+function PathDirToFile ( cDirectorio )
+{
+	cPath = cDirectorio.split(':').join('%3A');
+	cPath = cPath.split(' ').join('%20');
+	var cPath = 'file:///'+cPath;
+	return (cPath);
+}
 /**************************
 * Funcion que presenta las plataformas instaladas
 * 
@@ -184,21 +225,23 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 		//Seleccionamos plataforma y determinamos la version del compilador instalado
 		const cPlataforma = await Plataforma();
 		const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
-
+		//Obtenemos los datos de la plataforma ( modelo chip, directorios, compilador, .... )
 		const aDatosPlataforma = await DatosPlataforma(cPlataforma);
+
+		//Path extension vscode	
 		const cUsuario = require('os').homedir();
-
 		const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
-
-		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-		const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
-		const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
-	
-		let oJson =
+		//Path con la carpeta del proyecto
+		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();	//Determinamos file
+		var cDirTrabajo = `${thisWorkspace}/${cDispositivo}`;						//Añadimos la carpeta del proyecto ( con el nombre del ino )
+		cDirTrabajo = PathFileToDir(cDirTrabajo);									//Convertimos el file a dir
+		var DirectorioVscode = `${cDirTrabajo}/.vscode`;							//determinamos el directorio .vscode dentro del proyecto
+		DirectorioTrabajo = cDirTrabajo;											//Asignamsop valor a la variable global DirectorioTrabajo
+		let oJson =																	//Elaboramos el json		
 		{
 			"dispositivo": cDispositivo,
 			"folder": cDispositivo,
-			"sketch": cDispositivo+'\\'+cDispositivo+'.ino',
+			"sketch": cDispositivo+'/'+cDispositivo+'.ino',
 			"plataforma": cPlataforma,
 			"version": cVersionPlataforma,
 			"modelo": aDatosPlataforma[iMdolo],
@@ -209,25 +252,30 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 			"com": 'COM',
 			"baudios": 'Baudios', 
 			"directorios":
-			[
+			[	
 				{
-					"dirtrabajo" : DirectorioTrabajo,
-					"dirvscode" : DirectorioVscode,		
-					"diroutput" : DirectorioTrabajo + '/build',
-					"dircompilador" : aDatosPlataforma[iDirCompilador]
+					"trabajo": 
+					{
+						"dirtrabajo" : DirectorioTrabajo,
+						"dirvscode" : DirectorioVscode,		
+						"diroutput" : DirectorioTrabajo + '/build'
+					},
+					"plataforma":
+					{
+						"dircompilador" : aDatosPlataforma[iDirCompilador]
+					}	
 				}	
 			]
 		};
+		//Añadimos los directorios especificos para las librerias de la plataforma seleccionada
 		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
 		let oModelo = JSON.parse(JsonModelo);
-		console.log (oModelo);
 		let oLibreriasGenericas =  oModelo.librerias[0].genericas;
-		console.log("Siiiiiiiiiiiiiiiiiiiiiiiiiiiii");
-		console.log  (oLibreriasGenericas.include);
-		console.log  (oLibreriasGenericas.librerias);
-		console.log  (oLibreriasGenericas.cores);
-		console.log  (oLibreriasGenericas.variants);
-
+		oJson.directorios[0].plataforma['include'] = oLibreriasGenericas.include;
+		oJson.directorios[0].plataforma['librerias'] = oLibreriasGenericas.librerias;
+		oJson.directorios[0].plataforma['cores'] = oLibreriasGenericas.cores;
+		oJson.directorios[0].plataforma['variants'] = oLibreriasGenericas.variants;
+		await CreaServerpicJson(oJson);														//Creamos el fichero		
 		return(oJson);
 }
 /**************************
@@ -362,3 +410,20 @@ exports.GrabaParamJson = async function (cParametro, cValor)
 	await GrabaServerpicJson (oJson);
 
 }	
+/**************************
+* Funcion que crea el fichero .vscode/serverpic.json
+*
+* Como parametro utiliza la variable global  oJson con el json del proyecto
+*/
+async function CreaServerpicJson (oJson)
+{
+	const cFile = PathDirToFile(oJson.directorios[0].trabajo.dirvscode);
+	let serverpicjson = vscode.Uri.parse(`${cFile}/serverpic.json`);
+	we.createFile(serverpicjson, { ignoreIfExists: false, overwrite: true });
+	let DataJson = JSON.stringify(oJson);
+	we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
+	vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
+	await vscode.workspace.applyEdit(we);   
+	let document = await vscode.workspace.openTextDocument(serverpicjson); 
+	await document.save();
+}
