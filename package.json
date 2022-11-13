@@ -12,7 +12,9 @@
 	"activationEvents": [
         "onCommand:serverpic.new",
 		"onCommand:serverpic.monitor",
-		"onCommand:serverpic.compila"
+		"onCommand:serverpic.compila",
+		"onCommand:serverpic.upload",
+		"onCommand:serverpic.server"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -50,6 +52,14 @@
 				}
 			},
 			{
+				"command": "serverpic.server",
+				"title": "Servidor serverpic",
+				"icon": {
+					"dark": "images/icons/dark/vm.svg",
+					"light": "images/icons/light/vm.svg"
+				}
+			},
+			{
 				"command": "serverpic.SerialPortSel",
 				"title": "Serverpic Select Serial Port"
 			},
@@ -83,6 +93,11 @@
 				{
 					"when": "resourceExtname == .ino",
 					"command": "serverpic.upload",
+					"group": "navigation"
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.server",
 					"group": "navigation"
 				}
 

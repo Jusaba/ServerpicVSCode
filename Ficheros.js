@@ -18,7 +18,7 @@ let Fecha = new Date();
 Fecha = Fecha.toLocaleDateString();
 const cUsuario = require('os').homedir();
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;
-
+const fs = require('fs');
 var oJson;
 
 /**************************
@@ -47,8 +47,9 @@ exports.CreaArchivos = async function (oServerpicJson)
     cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;
     cPathProyecto = PathDirToFile(cPathProyecto);
 
-     var aFicheros = []
+     var aFicheros = [];
 
+     console.log(oServerpicJson);
     //await vscode.workspace.applyEdit(we);   
 
     aFicheros.push(await CreaIO());
@@ -59,6 +60,7 @@ exports.CreaArchivos = async function (oServerpicJson)
     aFicheros.push(await CreaHardware());
     aFicheros.push(await CreaCompila());
     aFicheros.push(await CreaUpload());
+    aFicheros.push(await CreaProperties());
 
 await vscode.workspace.applyEdit(we);
 for (const Fichero of aFicheros) { let document = await vscode.workspace.openTextDocument(Fichero); await document.save(); };
@@ -210,7 +212,7 @@ async function CreaUpload ()
     return(Upload);
 }
 /**************************
-* Funcion que crea el fichero boardlist.sh
+* Funcion que crea el fichero c_cpp_properties.json
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
 * @param Retorna el puntero al fichero
@@ -219,12 +221,121 @@ async function CreaProperties ()
 {
     let Properties = vscode.Uri.parse(`${cPathProyecto}/.vscode/c_cpp_properties.json`);
     we.createFile(Properties, { ignoreIfExists: false, overwrite: true });
-	let uriProperties = vscode.Uri.file(`${cPathExtension}/Plantillas/c_cpp_properties.js_`);                                                    //Establecemos el path de la plantilla TeamCity
+ 	let uriProperties = vscode.Uri.file(`${cPathExtension}/Plantillas/c_cpp_properties.jso_`);                                                    //Establecemos el path de la plantilla TeamCity
 	let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                                               //Cargamos la plantilla TeamCity
 	let PropertiesTexto = ((await oPropertiesTexto).getText());                                                                             //Extraemos el texto de la plantilla    
+    let cDirUsuario = cUsuario.split('\\').join('/');
 
-
+	PropertiesTexto = PropertiesTexto.split('#Dirusuario#').join(cDirUsuario);																	//Hacemos las sustituciones permanantes
+	PropertiesTexto = PropertiesTexto.split('#Plataforma#').join(oJson.plataforma);
+	PropertiesTexto = PropertiesTexto.split('#Version#').join(oJson.version);
+	PropertiesTexto = PropertiesTexto.split('#DirCompilador#').join(oJson.directorios[0].plataforma.dircompilador);
+	PropertiesTexto = PropertiesTexto.split('#Compilador#').join(oJson.compilador);
+	//PropertiesTexto = PropertiesTexto.split('#DirLib#').join(cDirectoriosLib);
+//Create_Intellisense();
+//PropertiesTexto = PropertiesTexto.replace()
+PropertiesTexto = (PropertiesTexto.toString()).replace('#DirLib#', await Create_Intellisense());
     we.insert(Properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     return(Properties);
 }
+
+
+/**************************
+* Funcion que chekea la exisencia de un directorio
+* 
+* @param cDirectorio.- Directorio que se desea checkear
+* @return Devuelve true si existe el directorio, false en caso contrario
+*/
+async function ChckDirExists (cDirectorio)
+{
+	var lSalida = false;
+	if (fs.existsSync(cDirectorio))
+	{
+		lSalida = true;
+	}
+	return ( lSalida);
+}
+function ChecDirDocuments ()
+{
+	var cSalida = 'Documents';
+	let cDirUsuario =  cUsuario.split('\\').join('/');
+	var cDirrr = cDirUsuario+'/Documentos';
+	if (ChckDirExists (cDirUsuario+'/Documentos')==true)
+	{
+		cSalida = 'Documentos';
+	}
+	return(cSalida);
+}
+function GenDir (cDirectorio)
+{
+    let cDirUsuario =  cUsuario.split('\\').join('/');
+    var cDir = cDirectorio;
+    cDir = (cDir.toString()).replace('#usuario#', cDirUsuario);
+    cDir = (cDir.toString()).replace('#version#', oJson.version);
+	cDir = (cDir.toString()).replace('#modelo#', oJson.modelo);
+	cDir = (cDir.toString()).replace('#documentos#', ChecDirDocuments());
+
+    return(cDir);
+}
+async function LeeDirectorio (cDirectorio)
+{
+	var cDirTot = '';
+	var cDirInd = '';
+
+	cDirTot = cDirTot+'\t\t\t\t'+'\"'+(cDirectorio.substring(0, cDirectorio.length - 1))+'\",'+'\n';	//Directorio contenedor
+	let files = fs.readdirSync(cDirectorio)																//Leemos el contenido del directorio
+	files.forEach(file => {																				//Recorremos el contenido
+		cDirInd = cDirectorio+file;																		//Añadimos todo el path al objetivo
+		var stat = fs.statSync(cDirInd)																	//Miramos de que tipo es el objetivo 
+		if (stat.isDirectory())																			//Si es un directorio
+		{
+			if (fs.existsSync(cDirInd+'/src'))															//Miramos si en el hay otro directorio src
+			{
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'/src\",'+'\n';								//Si lo hay agragamos el directorio src
+			}else{
+				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'\",'+'\n';									//Si no, el directorio original
+			}
+		}
+	})
+	return (cDirTot);
+}    
+async function Create_Intellisense ()
+{
+	var cListaLib = '';
+	let cModelo = oJson.modelo;
+    let cDirUsuario =  cUsuario.split('\\').join('/');
+    let cPlataforma = oJson.plataforma;
+    let cVersion = oJson.version;
+    
+    var uriPlataforma;
+    switch (oJson.plataforma)
+    {
+        case 'esp32':
+            uriPlataforma = vscode.Uri.file(`${cPathExtension}/placas/esp32.json`);                                                    //Establecemos el path de la plataforma
+            break;
+    }
+    
+	let oPlataformaTexto = vscode.workspace.openTextDocument(uriPlataforma);                                                               //Cargamos la plantilla TeamCity
+	let PlataformaTexto = ((await oPlataformaTexto).getText());                                                  
+    let oPlataformaJson = JSON.parse(PlataformaTexto);
+	let claves = Object.values(oPlataformaJson.librerias[0].plataforma);
+	var cDirectorio;
+	for ( let nElelmento = 0;nElelmento<claves.length;nElelmento++)
+	{
+		console.log(claves[nElelmento]);
+		cDirectorio = claves[nElelmento];
+		cDirectorio = GenDir(cDirectorio);
+		cListaLib = cListaLib + await LeeDirectorio(cDirectorio);
+	}
+	claves = Object.values(oPlataformaJson.librerias[0].genericas);
+	for ( let nElelmento = 0;nElelmento<claves.length;nElelmento++)
+	{
+		console.log(claves[nElelmento]);
+		cDirectorio = claves[nElelmento];
+		cDirectorio = GenDir(cDirectorio);
+
+		cListaLib = cListaLib + await LeeDirectorio(cDirectorio);
+	}
+	return(cListaLib);
+} 

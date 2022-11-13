@@ -71,7 +71,7 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 	//const items = fs.readdir("C:\\Users\\Julian\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.6\\tools\\sdk\\include\\");
 	//console.log(items);
 
-
+/*
 	var cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/tools/sdk/include/`
 	cListaLib =  await LeeDirectorio(cDirectorio);
 	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/libraries/`
@@ -90,6 +90,7 @@ async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
 	cListaLib = cListaLib.substring(0, cListaLib.length-2); 
                     
 	return(cListaLib);
+	*/
 } 
 
 function CheckModelo()
@@ -138,7 +139,7 @@ async function nc()
 
 	if (CheckModelo () == true)
 	{
-		var cCompila = `C:/Users/Julian/.vscode/extensions/Serverpic/Varios/nc picservertest.jusaba.es 2000`;
+		var cCompila = `${cUsuario}/.vscode/extensions/Serverpic/Varios/nc picservertest.jusaba.es 2000`;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
 		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
 	}else{
@@ -283,6 +284,9 @@ function activate(context) {
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
 		Upload (); 
 	});	
+	let disposable7 = vscode.commands.registerCommand("serverpic.server", async () => {
+		nc (); 
+	});	
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable1);
 	context.subscriptions.push(disposable2);
@@ -290,6 +294,7 @@ function activate(context) {
 	context.subscriptions.push(disposable4);
 	context.subscriptions.push(disposable5);
 	context.subscriptions.push(disposable6);
+	context.subscriptions.push(disposable7);
 }
 
 // this method is called when your extension is deactivated

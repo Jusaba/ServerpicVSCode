@@ -270,7 +270,7 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 		//Añadimos los directorios especificos para las librerias de la plataforma seleccionada
 		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
 		let oModelo = JSON.parse(JsonModelo);
-		let oLibreriasGenericas =  oModelo.librerias[0].genericas;
+		let oLibreriasGenericas =  oModelo.librerias[0].plataforma;
 		oJson.directorios[0].plataforma['include'] = oLibreriasGenericas.include;
 		oJson.directorios[0].plataforma['librerias'] = oLibreriasGenericas.librerias;
 		oJson.directorios[0].plataforma['cores'] = oLibreriasGenericas.cores;

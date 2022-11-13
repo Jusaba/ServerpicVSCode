@@ -15,8 +15,7 @@
             ],
             "intelliSenseMode": "windows-gcc-x86",
             "includePath": [
-#DirLib#
-             
+#DirLib#             
             ],
             "forcedInclude": [
                 "#Dirusuario#/AppData/Local/Arduino15/packages/#Plataforma#/hardware/#Plataforma#/#Version#/cores/#Plataforma#/Arduino.h"
