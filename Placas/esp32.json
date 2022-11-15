@@ -10,6 +10,10 @@
               "PartitionScheme":"huge_app",
               "DebugLevel":"none",
               "UploadSpeed":"115200"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/variants/esp32/"
 			}
 			
 		},
@@ -20,6 +24,10 @@
 				"fqbn" : "esp32:esp32:d1_mini32",
 				"PartitionScheme":"min_spiffs",
 				"UploadSpeed":"115200"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/variants/d1_mini32/"
 			}
 		}
     ],
@@ -29,12 +37,11 @@
 				{
 					"include" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/tools/sdk/include/",
 					"librerias" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/libraries/",
-					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/cores/esp32/",
-					"variants" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/variants/#modelo#/"
+					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/cores/esp32/"
 				},
 				"genericas":
 				{
-					"serverpic": "#usuario#/#documentos#/Arduino/libraries/"
+					"genericas": "#usuario#/#documentos#/Arduino/libraries/"
 				}								
 			
 		}

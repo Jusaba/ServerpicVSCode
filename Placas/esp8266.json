@@ -21,8 +21,11 @@
 			  "ssl":"all",
 			  "baud":"115200",
 			  "vt":"flash"
-			}
-			
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/generic/"
+			}	
 		},
         {
 			"name": "ESP01_4M",
@@ -44,8 +47,11 @@
 			  "ssl":"all",
 			  "baud":"115200",
 			  "vt":"flash"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/generic/"
 			}
-			
 		},
         {
 			"name": "ESP11",
@@ -67,8 +73,11 @@
 			  "ssl":"all",
 			  "baud":"115200",
 			  "vt":"flash"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/generic/"
 			}
-			
 		},
         {
 			"name": "Nodemcu",
@@ -85,6 +94,10 @@
 			  "ssl":"all",
 			  "baud":"115200",
 			  "vt":"flash"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/nodemcu/"
 			}
 			
 		},
@@ -103,9 +116,28 @@
 			  "ssl":"all",
 			  "baud":"115200",
 			  "vt":"flash"
+			},
+			"librerias":
+			{
+				"variants": "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/variants/nodemcu/"
 			}
 			
 		}                                                
 	
+	],
+	"librerias":[
+		{
+			"plataforma": 	
+				{
+					"include" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/tools/sdk/include/",
+					"librerias" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/libraries/",
+					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/cores/esp8266/"
+				},
+				"genericas":
+				{
+					"genericas": "#usuario#/#documentos#/Arduino/libraries/"
+				}								
+			
+		}
 	]
 }

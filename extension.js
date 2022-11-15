@@ -59,40 +59,6 @@ async function ChckDirExists (cDirectorio)
 	return ( lSalida);
 }
 
-async function Create_Intellisense (cModelo, cDirUsuario, cPlataforma, cVersion)
-{
-	var cListaLib = '';
-	/*
-	const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-	const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
-	const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
-	*/
-
-	//const items = fs.readdir("C:\\Users\\Julian\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\1.0.6\\tools\\sdk\\include\\");
-	//console.log(items);
-
-/*
-	var cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/tools/sdk/include/`
-	cListaLib =  await LeeDirectorio(cDirectorio);
-	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/libraries/`
-	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
-	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/cores/${cPlataforma}/`
-	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
-	cDirectorio = `${cDirUsuario}/AppData/Local/Arduino15/packages/${cPlataforma}/hardware/${cPlataforma}/${cVersion}/variants/${cModelo}/`
-	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);	
-	if (ChckDirExists(`${cDirUsuario}/Documents`))
-	{
-		cDirectorio = `${cDirUsuario}/Documents/Arduino/libraries/`
-	}else{
-		cDirectorio = `${cDirUsuario}/Documentos/Arduino/libraries/`
-	}
-	cListaLib =   cListaLib + await LeeDirectorio(cDirectorio);
-	cListaLib = cListaLib.substring(0, cListaLib.length-2); 
-                    
-	return(cListaLib);
-	*/
-} 
-
 function CheckModelo()
 {	var lSalida = false;
 	var cModelo = BarraEstado.LeeModelo();

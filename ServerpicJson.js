@@ -9,16 +9,17 @@
 * Se exportan las funciones para leer un parametro del json del fichero y para guardar un valor en cualquier parametro del json del fichero
 * 
 * Funciones exportadas
-*
+* --------------------
 * async CreaJson (cDispoitivo, cPlaca).- Crea el Json del proyecto
 * async GetJson ().- Devuelve el json del fichero .vscod/serverpic.json
-* async GrabaServerpicJson (oJson).- Graba oJson en le fichero EXISTENTE .vscode/serverpic.json
+* async GrabaServerpicJson (oJson).- Graba oJson en el fichero EXISTENTE .vscode/serverpic.json
 * async LeeParamJson (cParametro).- Lee el fichero .vscode/serverpic.json y devuelve el valor del indicador cParametro
 * async GrabaParamJson (cParametro, cValor).- Lee .vscode/serverpic.json y grava en el identificador cParametro el valor cValor
 *                                       Si no existe el identificador, lo añade como nuevo y vuelve a grabar el fichero .vscode/serverpic.json
 * async CreaServerpicJson (oJson).- Crea el ficheor INEXISTENTE .vscode/serverpic.json
 *
 * Funciones internas 
+* ------------------
 * async function Plataforma() .- Presenta las plataformas instaladas y deja seleccionar una
 * async function VersionPlataforma(cPlataforma) .- Devuelve la version instalada de la plataforma
 * async DatosPlataforma (cPlataforma ). Permite seleccionar el modelo de chip de la plataforma
@@ -35,10 +36,11 @@ const we = new vscode.WorkspaceEdit();
 const iPlataforma = 0;
 const iVersion = 1;
 const iMdolo = 2;
-const iFqbn = 3;
-const iConfiguracion = 4;
-const iCompilador = 5;
-const iDirCompilador = 6;
+const iPosicion = 3;
+const iFqbn = 4;
+const iConfiguracion = 5;
+const iCompilador = 6;
+const iDirCompilador = 7;
 
 
 //Determinamos path del directorio de tarabjao
@@ -137,10 +139,11 @@ async function VersionPlataforma(cPlataforma)
 *				[0].- Plataforma
 *				[1].- Version de la plataforma	
 *				[2].- Nombre del modelo de chip seleccionado
-*				[3].- fqbn del modelo seleccionado
-*				[4].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
-* 				[5].- Compilador
-*				[6].- Directorio compilacion
+*				[3].- Posicion del modelo dentro del Json
+*				[4].- fqbn del modelo seleccionado
+*				[5].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
+* 				[6].- Compilador
+*				[7].- Directorio compilacion
 *
 */
 async function DatosPlataforma(cPlataforma) {
@@ -165,6 +168,7 @@ async function DatosPlataforma(cPlataforma) {
 	for (var nPosicion in oBoards.Boards) {
 		//cuando encontramos el bloque correpondiente al modelo seleccionado
 		if (oBoards.Boards[nPosicion].name == quickPick) {
+			aSalida.push(nPosicion);											//Posicion del modelo dentro del Json
 			let oJsonConfiguracion = oBoards.Boards[nPosicion].configuracion;
 
 			//Añadimos al arrau de salida el fqbn
@@ -263,6 +267,10 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 					"plataforma":
 					{
 						"dircompilador" : aDatosPlataforma[iDirCompilador]
+					},
+					"librerias":
+					{
+					
 					}	
 				}	
 			]
@@ -270,11 +278,14 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 		//Añadimos los directorios especificos para las librerias de la plataforma seleccionada
 		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
 		let oModelo = JSON.parse(JsonModelo);
-		let oLibreriasGenericas =  oModelo.librerias[0].plataforma;
-		oJson.directorios[0].plataforma['include'] = oLibreriasGenericas.include;
-		oJson.directorios[0].plataforma['librerias'] = oLibreriasGenericas.librerias;
-		oJson.directorios[0].plataforma['cores'] = oLibreriasGenericas.cores;
-		oJson.directorios[0].plataforma['variants'] = oLibreriasGenericas.variants;
+		let oLibrerias = oModelo.Boards[aDatosPlataforma[iPosicion]].librerias;				//Librerias particulares del modelo de chip
+		oJson.directorios[0].librerias['variants'] = oLibrerias.variants;
+		oLibrerias =  oModelo.librerias[0].plataforma;										//Librerias particulares de la plataforma
+		oJson.directorios[0].librerias['include'] = oLibrerias.include;
+		oJson.directorios[0].librerias['librerias'] = oLibrerias.librerias;
+		oJson.directorios[0].librerias['cores'] = oLibrerias.cores;
+		oLibrerias =  oModelo.librerias[0].genericas;										//Librerias genericas de Serverpic
+		oJson.directorios[0].librerias['genericas'] = oLibrerias.genericas;
 		await CreaServerpicJson(oJson);														//Creamos el fichero		
 		return(oJson);
 }
