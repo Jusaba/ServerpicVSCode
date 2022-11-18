@@ -103,14 +103,10 @@ async function Compila()
 async function nc()
 {
 
-	if (CheckModelo () == true)
-	{
-		var cCompila = `ncat picservertest.jusaba.es 2000`;
+	//nmap -> https://mega.nz/file/PdFVUIIK#V2JJRgyCY03Sq466wCxkh0z8-1A94G81EqbJj9lkZ_E
+		var cNc = `ncat picservertest.jusaba.es 2000`;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
-		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
-	}else{
-		vscode.window.showErrorMessage('Se debe seleccionar un micro valido');
-	}
+		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cNc  +'\n' });
 }
 async function Monitor ()
 {
