@@ -105,7 +105,7 @@ async function nc()
 
 	if (CheckModelo () == true)
 	{
-		var cCompila = `${cUsuario}/.vscode/extensions/Serverpic/Varios/nc picservertest.jusaba.es 2000`;
+		var cCompila = `ncat picservertest.jusaba.es 2000`;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
 		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
 	}else{
@@ -246,6 +246,7 @@ function activate(context) {
 		//Compila ();
 		//JsonServerpic.GrabaParamJson('PathCompilador', 'c:/user');
 		nc();
+		//https://www.configserverfirewall.com/windows-10/netcat-windows/
 	});	
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
 		Upload (); 
