@@ -23,10 +23,13 @@ var SerialPortSelected;
 */
 exports.LeePuertos = async function ()
 {
+
 	var outChannel = vscode.window.createOutputChannel('Serverpic');
-	outChannel.clear();
+//	outChannel.clear();
 	outChannel.appendLine("Leyendo Puertos Serie");
 	outChannel.show();
+
+
 	await PuertosToArray();
 	vscode.commands.executeCommand('workbench.action.terminal.focus');
 }
@@ -72,6 +75,7 @@ async function  PuertosToArray ()
 */
 async function BrowseSerialPort (aPuertos)
 {
+
         var SerialPortSelectedOld = SerialPortSelected;
 		SerialPortSelected = await vscode.window.showQuickPick(aPuertos, { canPickMany: false, placeHolder: 'Seleccionar Puerto' });	
 		if (SerialPortSelected == undefined)
@@ -97,6 +101,7 @@ async function BrowseSerialPort (aPuertos)
 */
 async function SerialPortConfig (cPuerto)
 {
+	var lExisteCom = 0
 	const { spawn } = require('node:child_process');					//Leemos la configuracion del puerto con shelll mode			
 	const bat = await spawn('cmd.exe', ['/c', 'mode '+cPuerto]);
 	//Si se ejecuta el shell tratamos los datos recibidos
@@ -110,11 +115,16 @@ async function SerialPortConfig (cPuerto)
 				var aBaudios = cLinea.split(':');			//Troceamos la linea con separador :
 				var cBaudios = aBaudios[1].trim();			//Quitamos los espacios del segundo termino que es el que contiene el COM
 				BarraEstado.GrabaBaudios(cBaudios);			//Actualizamos la barra de baudios con el nuevo texto
+				lExisteCom = 1;
 				//aPuertos.push ( aPuertosTmp [0]);			//Añadimos a aPuertos el puerto leido
-			}else{											//Si no hay informacion de baudios en la informacion recibida
-				vscode.window.showErrorMessage(`No se puede leer la configuracion de ese puerto!`);	//Informamos del error
 			}
 		});
+		if ( lExisteCom == 0)								//Si no hay informacion de baudios en la informacion recibida
+		{							
+			vscode.window.showErrorMessage(`No se puede leer la configuracion de ese puerto!`);	//Informamos del error
+			BarraEstado.GrabaBaudios('Baudios');		//Borramos la velocidad de la barra de estado y en el Json 
+			BarraEstado.GrabaCom('COM');				//Borramos el COMO por que no es valido
+		}
 	});
 	//Si se produce error en la ejecucion del Shell
 	bat.stderr.on('data', (data) => {

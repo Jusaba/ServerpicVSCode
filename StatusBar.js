@@ -91,6 +91,8 @@ exports.LeeModelo = async function ()
 */
 exports.GrabaCom = async function (cCOM)
 {
+
+
     statusBarCom.text = cCOM;
 	JsonServerpic.GrabaParamJson('com', cCOM);
     statusBarCom.show();

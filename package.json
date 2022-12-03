@@ -14,7 +14,8 @@
 		"onCommand:serverpic.monitor",
 		"onCommand:serverpic.compila",
 		"onCommand:serverpic.upload",
-		"onCommand:serverpic.server"
+		"onCommand:serverpic.server",
+		"onCommand:serverpic.reload"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -60,6 +61,14 @@
 				}
 			},
 			{
+				"command": "serverpic.reload",
+				"title": "Servidor serverpic",
+				"icon": {
+					"dark": "images/icons/dark/refresh.svg",
+					"light": "images/icons/light/refresh.svg"
+				}
+			},			
+			{
 				"command": "serverpic.SerialPortSel",
 				"title": "Serverpic Select Serial Port"
 			},
@@ -99,8 +108,12 @@
 					"when": "resourceExtname == .ino",
 					"command": "serverpic.server",
 					"group": "navigation"
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.reload",
+					"group": "navigation"
 				}
-
 			]
 		}
 	},

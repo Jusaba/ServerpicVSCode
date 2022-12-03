@@ -11,6 +11,7 @@
 * Funciones exportadas
 * --------------------
 * async CreaArchivos(oJson) .- Función que crea los distintos archivos del proyecto
+* async CreaIntellisenseWork().-
 *
 * Funciones internas 
 * ------------------
@@ -22,7 +23,7 @@
 * async CreaHardware().- Crea el fichero Hardware	
 * async CreaCompila().- Crea el fichero Compila.bat
 * async CreaUpload().- Crea el fichero Upload.bat
-* async CreaProperties().- Crea el fichero c_cpp_properties.json
+* async CreaProperties(lWork).- Crea el fichero c_cpp_properties.json
 * 
 * async ChckDirExists (cDirectorio). Chekea la existencia de un directorio
 * async ChecDirDocuments (). Deterina si existe el directorio Documentos o Documents
@@ -43,6 +44,9 @@ const cUsuario = require('os').homedir();								//Directorio usuario
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`;	//Deirectorio de la extension
 const fs = require('fs');
 var oJson;																//Json con la información del proyecto
+
+const JsonServerpic = require('./ServerpicJson.js');
+const { Console } = require("console");
 
 /**************************
 * Funcion que transforma path de dirextorio en path para file
@@ -80,7 +84,7 @@ exports.CreaArchivos = async function (oServerpicJson)
     aFicheros.push(await CreaHardware());
     aFicheros.push(await CreaCompila());
     aFicheros.push(await CreaUpload());
-    aFicheros.push(await CreaProperties());
+    aFicheros.push(await CreaProperties(0));
 
 	await vscode.workspace.applyEdit(we);							//Cerramos los distintos ficheros	
 	for (const Fichero of aFicheros) { let document = await vscode.workspace.openTextDocument(Fichero); await document.save(); };
@@ -245,10 +249,11 @@ async function CreaUpload ()
 /**************************
 * Funcion que crea el fichero c_cpp_properties.json
 *
+* @param lWork.- Indica con  1 o 0 si esta en trabajo o en creacion inicial para no cerrar el editor
 * Como parametro utiliza la variable global  oJson con el json del proyecto
 * @param Retorna el puntero al fichero
 */
-async function CreaProperties ()
+async function CreaProperties (lWork)
 {
     let Properties = vscode.Uri.parse(`${cPathProyecto}/.vscode/c_cpp_properties.json`);
     we.createFile(Properties, { ignoreIfExists: false, overwrite: true });
@@ -263,9 +268,12 @@ async function CreaProperties ()
 	PropertiesTexto = PropertiesTexto.split('#DirCompilador#').join(oJson.directorios[0].plataforma.dircompilador);
 	PropertiesTexto = PropertiesTexto.split('#Compilador#').join(oJson.compilador);
 	PropertiesTexto = (PropertiesTexto.toString()).replace('#DirLib#', await Create_Intellisense());
-    we.insert(Properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
-	vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-    return(Properties);
+	we.insert(Properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
+	if ( lWork == 0)
+	{
+		vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+	}
+	return(Properties);
 }
 
 
@@ -353,7 +361,7 @@ async function LeeDirectorio (cDirectorio)
 }    
 /**************************
 * Funcion que obtiene cada uno de los directorios con librerias del json y crea una cadena 
-* con todos los directorios de librertias de esos direcotrios
+* con todos los directorios de librerias de esos direcotrios
 * 
 * Sustituye #usuario#, #version#, #modelo# y #documentos# en la cadena de directorio del json
 * por los valores que corresponden a la plataforma y al directorio Documents
@@ -376,3 +384,17 @@ console.log(cDirectorio);
 	cListaLib = cListaLib.substring(0, cListaLib.length-2); 			//Le quitamos la ultima coma
 	return(cListaLib);
 } 
+
+exports.CreateIntellisenseWork = async function (oJsonTmp)
+{
+	oJson = oJsonTmp;
+    cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
+    cPathProyecto = PathDirToFile(cPathProyecto);
+
+	var fProperties = 	await CreaProperties (1);
+
+	await vscode.workspace.applyEdit(we);							//Cerramos los distintos ficheros	
+	let document = await vscode.workspace.openTextDocument(fProperties); 
+	await document.save(); 
+
+}

@@ -18,7 +18,7 @@ const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
 
-var aBoard;
+var aBoard ;
 
 
 async function LeeDirectorio (cDirectorio)
@@ -93,7 +93,9 @@ async function Compila()
 
 	if (CheckModelo () == true)
 	{
-		var cCompila = `arduino-cli compile -b ${aBoard[3]}:${aBoard[4]} --build-path build -e -v `;
+		var cfqbn = await JsonServerpic.LeeParamJson('fqbn');
+		var cConfiguration = await JsonServerpic.LeeParamJson('configuration');
+		var cCompila = `arduino-cli compile -b ${cfqbn}:${cConfiguration} --build-path build -e -v `;
 		vscode.commands.executeCommand('workbench.action.terminal.focus');
 		vscode.commands.executeCommand('workbench.action.terminal.sendSequence', { "text": cCompila  +'\n' });
 	}else{
@@ -166,60 +168,15 @@ function activate(context) {
 		Ficheros.CreaArchivos(oJson);
 
 		
-		// definimos los ficheros a incluir
-/*		                                                       
-		let properties = vscode.Uri.parse(`${DirectorioVscode}/c_cpp_properties.json`);
-		//Creamos un array de los ficheros y los creamos
-		let newFiles = [ properties];                                                                             // Creamos array de ficheros
-		for (const newFile of newFiles) { we.createFile(newFile, { ignoreIfExists: false, overwrite: true }) };
-
-		                                                   //Cerramos el fichero abierto en workspace
 	
-		
-		                                            //Cerramos el fichero abierto en workspace
-
-
-*/	
-
-		//-------------------
-		//Fichero c_cpp_properties
-		//-------------------
-/*		let cDirUsuario = (`${cUsuario}`.toString()).replace('\\', '/');
-		cDirUsuario = (cDirUsuario.toString()).replace('\\', '/');
-		let cDirectoriosLib = await Create_Intellisense (aDatosPlataforma[2], cDirUsuario, aDatosPlataforma[0], cVersionPlataforma);
-		let uriProperties = vscode.Uri.file(`${FolderExtension}/Plantillas/c_cpp_properties.jso_`);                                                 //Establecemos el path de la plantilla TeamCity
-		let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                                               		//
-		let PropertiesTexto = ((await oPropertiesTexto).getText());                                                                             	//Extraemos el texto de la plantilla    
-		PropertiesTexto = PropertiesTexto.split('#Dirusuario#').join(cDirUsuario);																	//Hacemos las sustituciones permanantes
-		PropertiesTexto = PropertiesTexto.split('#Plataforma#').join(aDatosPlataforma[0]);
-		PropertiesTexto = PropertiesTexto.split('#Version#').join(cVersionPlataforma);
-		PropertiesTexto = PropertiesTexto.split('#DirCompilador#').join(aDatosPlataforma[6]);
-		PropertiesTexto = PropertiesTexto.split('#Compilador#').join(aDatosPlataforma[5]);
-		PropertiesTexto = PropertiesTexto.split('#DirLib#').join(cDirectoriosLib);
-		
-
-		we.insert(properties, new vscode.Position(0, 0), PropertiesTexto);                                                                       //Grabamos la informacion en el prigrama ino
-		vscode.commands.executeCommand('workbench.action.closeActiveEditor');     
-
-		await vscode.workspace.applyEdit(we);                                                                                       // apply all the edits: file creation and adding text
-		for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
-*/		
-		//for (const newFile of newFiles) { let document = await vscode.workspace.openTextDocument(newFile); await document.save(); };
-
-		//vscode.commands.executeCommand('workbench.action.closeFolder');
-		
 
 	});
 	let disposable1 = vscode.commands.registerCommand("serverpic.monitor", async () => {
 		//Creamos un canal para escribir en la consola de salida con el nombre Serverpic
 		var outChannel = vscode.window.createOutputChannel('Serverpic');
 		outChannel.clear();
-		outChannel.appendLine("[Start] Compilando");
+		outChannel.appendLine("[Start] Monitor");
 		
-		const Directoriotrabajo = vscode.workspace.workspaceFolders[0].uri.toString();
-		
-		outChannel.appendLine(Directoriotrabajo);
-		//Preparamos para ejecutar el bat
 		Monitor();
 
 	});
@@ -231,17 +188,12 @@ function activate(context) {
 		await port.BaudioSel (); 
 	});	
 	let disposable4 = vscode.commands.registerCommand("serverpic.ModeloSel", async () => {
-		let cPlataforma = await Plataforma();
-		let cVersionPlataforma = await VersionPlataforma(cPlataforma);
-		//Seleccionamos el modelo de placa
-		let aDatosPlataforma = await ModeloPlataforma(cPlataforma);
-		BarraEstado.GrabaModelo(aDatosPlataforma[2]);
-		aBoard = aDatosPlataforma;
+		JsonServerpic.PlataformaWork();
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
-		//Compila ();
+		Compila ();
 		//JsonServerpic.GrabaParamJson('PathCompilador', 'c:/user');
-		nc();
+		//nc();
 		//https://www.configserverfirewall.com/windows-10/netcat-windows/
 	});	
 	let disposable6 = vscode.commands.registerCommand("serverpic.upload", async () => {
@@ -250,6 +202,10 @@ function activate(context) {
 	let disposable7 = vscode.commands.registerCommand("serverpic.server", async () => {
 		nc (); 
 	});	
+	let disposable8 = vscode.commands.registerCommand("serverpic.reload", async () => {
+		JsonServerpic.DirWork();		
+	});	
+
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable1);
 	context.subscriptions.push(disposable2);
@@ -258,7 +214,9 @@ function activate(context) {
 	context.subscriptions.push(disposable5);
 	context.subscriptions.push(disposable6);
 	context.subscriptions.push(disposable7);
-}
+	context.subscriptions.push(disposable8);
+}	
+
 
 // this method is called when your extension is deactivated
 function deactivate() { }
