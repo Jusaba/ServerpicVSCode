@@ -16,8 +16,10 @@
 * async LeeParamJson (cParametro).- Lee el fichero .vscode/serverpic.json y devuelve el valor del indicador cParametro
 * async GrabaParamJson (cParametro, cValor).- Lee .vscode/serverpic.json y grava en el identificador cParametro el valor cValor
 *                                       Si no existe el identificador, lo añade como nuevo y vuelve a grabar el fichero .vscode/serverpic.json
-* async CreaServerpicJson (oJson).- Crea el ficheor INEXISTENTE .vscode/serverpic.json
 *
+* async DirWork().- Función llamada desde el ino para establecer el directorio de trabajo dentro de este paquete (Serverpicjson.js)
+* async PlataformaWork().- Funcion que permite cambiar la el modelo y la plataforma en un proyecto en trabajo
+* async DatosPlataformaWork().- 
 * Funciones internas 
 * ------------------
 * async function Plataforma() .- Presenta las plataformas instaladas y deja seleccionar una
@@ -25,8 +27,12 @@
 * async DatosPlataforma (cPlataforma ). Permite seleccionar el modelo de chip de la plataforma
 *                                       Devuelve un array con datos de plataforma, version, chip, fqbn, parmetros de configuracion
 *                                       compilador y direccion del compilador 
+* async CreaServerpicJson (oJson).- Crea el fichero INEXISTENTE .vscode/serverpic.json
 * PathFileToDir().- Convierte path de file a directorio
-* PathDirToFile().- Convierte pat de directorio a path de file
+* PathDirToFile().- Convierte path de directorio a path de file
+* async LeeServerpicJson().- Lee el fichero Json del proyecto
+* async GrabaServerpicJson (oJson).- Graba el Json oJson en el fichero Json del proyecto
+* async ChangeLibPlataforma (cPlataforma).- Cambia las librerias de Serverpic.h en funcion de la plataforma seleccionada
 *******************************************************/
 'use strict';
 const { window } = require("vscode")
@@ -88,7 +94,6 @@ function PathDirToFile ( cDirectorio )
 /**************************
 * Funcion que presenta las plataformas instaladas
 * 
-* El listado de plataformas se almacena en .vscode\Plataformas.json
 */
 async function Plataforma() {
 	const cUsuario = require('os').homedir();
@@ -442,14 +447,18 @@ async function CreaServerpicJson (oJson)
 	const cFile = PathDirToFile(oJson.directorios[0].trabajo.dirvscode);
 	let serverpicjson = vscode.Uri.parse(`${cFile}/serverpic.json`);
 	we.createFile(serverpicjson, { ignoreIfExists: false, overwrite: true });
-	let DataJson = JSON.stringify(oJson);
+	let DataJson = JSON.stringify(oJson, null, 4);
 	we.insert(serverpicjson, new vscode.Position(0, 0), DataJson);
 	vscode.commands.executeCommand('workbench.action.closeActiveEditor');                                                     //Cerramos el fichero abierto en workspace
 	await vscode.workspace.applyEdit(we);   
 	let document = await vscode.workspace.openTextDocument(serverpicjson); 
 	await document.save();
 }
-
+/**************************
+* Funcion llamada desde el ino que establece el directorio de trabajo y
+* actualiza la barra de estado con los datos guardados en el Json
+* 
+*/
 exports.DirWork = async function ()
 {
 	var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
@@ -460,81 +469,132 @@ exports.DirWork = async function ()
 	BarraEstado.GrabaBaudios(oJson.baudios);
 	BarraEstado.GrabaModelo(oJson.modelo);
 }
-
+/**************************
+* Funcion que permite seleccionar una plataforma y/o modelo distintos
+* actualiza la barra de estado, el json y genera un nuevo intellisense
+*/
 exports.PlataformaWork =   async function ()
 {
-	outChannel.clear();
+	outChannel.clear();																		//Borramos la ventana de salida
 	//Path extension vscode	
 	const cUsuario = require('os').homedir();
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
-	//Seleccionamos plataforma y determinamos la version del compilador instalado
-	const cPlataforma = await Plataforma();
-	const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
-	//Obtenemos los datos de la plataforma ( modelo chip, directorios, compilador, .... )
-	const aDatosPlataforma = await DatosPlataforma(cPlataforma);
-	var oJson = await LeeServerpicJson();
-	if (oJson.plataforma != aDatosPlataforma[iPlataforma])
+	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`					//Directorio de la extensión
+	const cPlataforma = await Plataforma();													//Seleccionamos plataforma
+	const aDatosPlataforma = await DatosPlataforma(cPlataforma);							//Seleccionamos modelo y cargamos los datos de la plataforma y del modelo en aDatosPlataforma
+	var oJson = await LeeServerpicJson();													//Cargamos el json
+
+	if (oJson.plataforma != aDatosPlataforma[iPlataforma])									//Si Ha habido cambio de plataforma
 	{
-		console.log('------------');
-		console.log(oJson.plataforma);
-		console.log(aDatosPlataforma[iPlataforma]);
 
 		outChannel.appendLine("Cambiando el modelo y la plataforma");
 
 		outChannel.appendLine(`Nueva plataforma: ${aDatosPlataforma[iPlataforma]}`);				
-		oJson.plataforma = aDatosPlataforma[iPlataforma];										//Actualizamos los datos de plataforma
-		oJson.version = await VersionPlataforma(aDatosPlataforma[iPlataforma]);
+		oJson.plataforma = aDatosPlataforma[iPlataforma];									//Actualizamos los datos de plataforma en el Json
+		oJson.version = await VersionPlataforma(aDatosPlataforma[iPlataforma]);				//Actualizamos la version en el Json
 		outChannel.appendLine(`Version: ${oJson.version}`);
 
 		outChannel.appendLine(`Nuevo modelo: ${aDatosPlataforma[iModelo]}`);
-		oJson.fqbn = aDatosPlataforma[iFqbn];
-		oJson.configuration = aDatosPlataforma[iConfiguracion];
+		oJson.fqbn = aDatosPlataforma[iFqbn];												//Acutalizamos Fqbn en el Json
+		oJson.configuration = aDatosPlataforma[iConfiguracion];								//Actuallizamos la configuracion de compilacion en el Json
 
 		outChannel.appendLine(`Cambiados compilador y directorio de compilador`);
-		oJson.compilador = aDatosPlataforma[iCompilador];
-		oJson.directorios[0].plataforma.dircompilador = aDatosPlataforma[iDirCompilador];
+		oJson.compilador = aDatosPlataforma[iCompilador];									//Actualizamos el compilador en el Json						
+		oJson.directorios[0].plataforma.dircompilador = aDatosPlataforma[iDirCompilador];	//Actualizamos el directorio del compilador
 
 		outChannel.appendLine(`Cambiadas las librerias del modelo`);
-		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);		//Leemos el json de la plataforma	
+		let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);	//Leemos el json de la plataforma	
 		let oModelo = JSON.parse(JsonModelo);			
-		let oLibrerias = oModelo.Boards[aDatosPlataforma[iPosicion]].librerias;					//Leemos la libreria 'variants' del modelo	
-		oJson.directorios[0].librerias['variants'] = oLibrerias.variants;	
-							//Se la asignamos al Json
+		let oLibrerias = oModelo.Boards[aDatosPlataforma[iPosicion]].librerias;				//Leemos la libreria 'variants' del modelo	
+		oJson.directorios[0].librerias['variants'] = oLibrerias.variants;					//Actualizamos el Json con la libreria variant del modelo seleccionado	
+							
 		outChannel.appendLine(`Cambiadas las librerias de la plataforma`);	
-		oLibrerias =  oModelo.librerias[0].plataforma;											//Actualizamos las libre4rias de la plataforma				
-		oJson.directorios[0].librerias['include'] = oLibrerias.include;
+		oLibrerias =  oModelo.librerias[0].plataforma;										//Leemos las librerias pertenecientes a la plataforma	
+		oJson.directorios[0].librerias['include'] = oLibrerias.include;						//Actualizamos el Json con las librerias de la plataforma
 		oJson.directorios[0].librerias['librerias'] = oLibrerias.librerias;
 		oJson.directorios[0].librerias['cores'] = oLibrerias.cores;
 		
-		outChannel.appendLine(`Generando Intellisense`);				
-		Ficheros.CreateIntellisenseWork (oJson);
+		outChannel.appendLine(`Generando Intellisense`);					
+		Ficheros.CreateIntellisenseWork (oJson);											//Generamos c_cpp_properties.json
 		outChannel.appendLine(`Generando el nuevo Json`);				
-		GrabaServerpicJson (oJson);	
-		
-		
-	}else{
-		console.log('------------');
-		console.log(oJson.modelo);
-		console.log(aDatosPlataforma[iModelo]);
-		//Pendiente de corregir. DatosPlataforma () ya graba el nuevo modelo en el Json por lo que no se detecta cambio
+		GrabaServerpicJson (oJson);															//Guardamos el nuevo Json
+	}else{																					//Si solo ha habido cambio de modelo y no de plataforma
+	//%%%%%%%%%%%%%%%%%%Pendiente de corregir. DatosPlataforma () ya graba el nuevo modelo en el Json por lo que no se detecta cambio
 		if (oJson.modelo != aDatosPlataforma[iModelo])
 		{
 			outChannel.appendLine(`Nuevo modelo: ${aDatosPlataforma[iModelo]}`);
-			oJson.fqbn = aDatosPlataforma[iFqbn];
-			oJson.configuration = aDatosPlataforma[iConfiguracion];
+			oJson.fqbn = aDatosPlataforma[iFqbn];											//Grabamos el nuvo Fqbn en el Json
+			oJson.configuration = aDatosPlataforma[iConfiguracion];							//Grabamos en el json la configuracion de compilacion
 						
 			outChannel.appendLine(`Cambiadas las librerias del modelo`);
-			let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);		//Leemos el json de la plataforma	
+			let JsonModelo = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);		//Leemos el json de la plataforma
 			let oModelo = JSON.parse(JsonModelo);			
 			let oLibrerias = oModelo.Boards[aDatosPlataforma[iPosicion]].librerias;					//Leemos la libreria 'variants' del modelo	
 			oJson.directorios[0].librerias['variants'] = oLibrerias.variants;	
-	
 		}	
 	}
+	ChangeLibPlataforma(aDatosPlataforma[iPlataforma]);
 	outChannel.show();
 }
+/***********************************************
+ *  Funcion exportable para Seleccionar modelo y plataforma en proyecto en trabajo
+ */
 exports.DatosPlataformaWork = async function ()
 {
 	var oJson = await LeeServerpicJson();
 	return (DatosPlataforma(oJson.plataforma));
+}
+/***********************************************
+ * Funcion que cambia las librerias de Serverpic.h en funcion de la plataforma seleccionada
+ * @param cPlataforma.- Nueva plataforma de la que se quieren actualizar los datos
+ */
+async function ChangeLibPlataforma (cPlataforma)
+{
+	var lContenido = 0;
+	const cUsuario = require('os').homedir();
+	var uriLibrerias;
+	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
+	switch (cPlataforma) {
+		case 'esp8266':
+			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp8266.h`);
+			break;
+		case 'esp32':
+			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp32.h`);
+			break;
+	}
+	let oServerpicLib = await vscode.workspace.openTextDocument(uriLibrerias);
+	let ServerpicLibTexto =  ((await oServerpicLib).getText()); 
+
+	var uriServerpich = vscode.Uri.file(`${DirectorioTrabajo}/Serverpic.h`);
+	let oServerpich = await vscode.workspace.openTextDocument(uriServerpich);
+	let ServerpichTexto =  ((await oServerpich).getText());
+
+	var lineas = ServerpichTexto.split('\n');
+	var nLinea = 0;
+	for(var linea of lineas) {		
+		if(linea.indexOf('//Librerias') > -1) {
+		  lContenido = 1;
+		  lineas[nLinea] = "#includes#"
+		  var nLineaI = nLinea;
+		}
+		if ( lContenido )
+		{
+			//console.log(`${linea}`, linea)
+		}
+		if(linea.indexOf('//Fin librerias') > -1) {
+			lContenido = 0;
+			var nLineaF = nLinea;
+		}	
+		nLinea++;
+	}
+	lineas.splice(nLineaI + 1, nLineaF - nLineaI + 1 );
+	ServerpichTexto = lineas.join('\n');
+	//we.insert(uriServerpich, new vscode.Position(0, 0), ServerpichTexto)
+	ServerpichTexto =    (ServerpichTexto.toString()).replace('#includes', ServerpicLibTexto );
+	console.log(ServerpichTexto);
+	//console.log(document);
+	fs.writeFileSync(`${DirectorioTrabajo}/Serverpic.h`, ServerpichTexto );
+	//	var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
+//	window.showInformationMessage(cPath);
+//	DirectorioTrabajo =  PathFileToDir(cPath);
+
 }

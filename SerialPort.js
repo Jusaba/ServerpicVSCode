@@ -9,6 +9,18 @@
 * Se exporta la funcion para seleccionar un puerto y para seleccionar una velocidad
 *
 * 
+* Funciones exportadas
+* --------------------
+* async LeePuertos().- Función exportada para listar y seleccionar un puerto
+* async BaudioSel().- Función para configurar la velocidad de un puerto
+*
+* Funciones internas 
+* ------------------
+* 
+* async PuertosToArray().- Funcion interna que lee los guarda en un array que manda a BrowseSerialPort () para seleccionar uno. Es llamada por la exportada LeePuertos()
+* async BrowseSerialPort (aPuertos).- Funcion que recibe una array con los puertos instalados, deja seleccionar uno y lo refleja en la barra de estado
+* async SerialPortConfig (cPuerto).- Funcion que lee la configuracion de un puerto y actualiza la barra de estado con los baudios configurados
+* async CheckC ().- Funcion que comprueba si en la barra de estado hay un COM y una velocidad distintas de COM y Baudios
 *******************************************************/
 const { Console } = require("console");
 const vscode = require("vscode")
@@ -36,7 +48,8 @@ exports.LeePuertos = async function ()
 
 
 /**************************
-* Funcion que lee la cantidad de puertos serie ocupados y deja seleccionar uno
+* Funcion que lee la cantidad de puertos y los guarda en un array
+* Con el array llama a BrowseSerialPort (aPuertos) que es la función que deja seleccionar un puerto y actualiza la barra de estado
 */
 async function  PuertosToArray ()
 {
@@ -123,7 +136,7 @@ async function SerialPortConfig (cPuerto)
 		{							
 			vscode.window.showErrorMessage(`No se puede leer la configuracion de ese puerto!`);	//Informamos del error
 			BarraEstado.GrabaBaudios('Baudios');		//Borramos la velocidad de la barra de estado y en el Json 
-			BarraEstado.GrabaCom('COM');				//Borramos el COMO por que no es valido
+			BarraEstado.GrabaCom('COM');				//Borramos el COM por que no es valido
 		}
 	});
 	//Si se produce error en la ejecucion del Shell
@@ -137,7 +150,7 @@ async function SerialPortConfig (cPuerto)
 }
 
 /**************************
-* Funcion para seleccionar la velodicad del puerto serie
+* Funcion para seleccionar la velodicad del puerto serie, configura el puerto con la velocidad seleccionada y actualiza la barra de estado
 *
 */
 exports.BaudioSel = async function () {
