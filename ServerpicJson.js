@@ -479,11 +479,22 @@ exports.PlataformaWork =   async function ()
 	//Path extension vscode	
 	const cUsuario = require('os').homedir();
 	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`					//Directorio de la extensión
+	var oJson = await LeeServerpicJson();													//Cargamos el json
 	const cPlataforma = await Plataforma();													//Seleccionamos plataforma
 	const aDatosPlataforma = await DatosPlataforma(cPlataforma);							//Seleccionamos modelo y cargamos los datos de la plataforma y del modelo en aDatosPlataforma
-	var oJson = await LeeServerpicJson();													//Cargamos el json
+	const cPlataformaOld = oJson.plataforma;												//Cargamos la plataforma actual
+	const cModeloOld=oJson.modelo;															//Cargamos el modelo actual
+console.log('--------------------------');
+console.log(cPlataforma);
+console.log(cPlataformaOld);
+console.log(aDatosPlataforma[iModelo]);
+console.log(cModeloOld);
+console.log('--------------------------');
 
-	if (oJson.plataforma != aDatosPlataforma[iPlataforma])									//Si Ha habido cambio de plataforma
+
+
+
+	if (cPlataformaOld != aDatosPlataforma[iPlataforma])									//Si Ha habido cambio de plataforma
 	{
 
 		outChannel.appendLine("Cambiando el modelo y la plataforma");
@@ -518,8 +529,7 @@ exports.PlataformaWork =   async function ()
 		outChannel.appendLine(`Generando el nuevo Json`);				
 		GrabaServerpicJson (oJson);															//Guardamos el nuevo Json
 	}else{																					//Si solo ha habido cambio de modelo y no de plataforma
-	//%%%%%%%%%%%%%%%%%%Pendiente de corregir. DatosPlataforma () ya graba el nuevo modelo en el Json por lo que no se detecta cambio
-		if (oJson.modelo != aDatosPlataforma[iModelo])
+		if ( cModeloOld != aDatosPlataforma[iModelo])
 		{
 			outChannel.appendLine(`Nuevo modelo: ${aDatosPlataforma[iModelo]}`);
 			oJson.fqbn = aDatosPlataforma[iFqbn];											//Grabamos el nuvo Fqbn en el Json
