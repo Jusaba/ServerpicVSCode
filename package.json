@@ -62,7 +62,7 @@
 			},
 			{
 				"command": "serverpic.reload",
-				"title": "Servidor serverpic",
+				"title": "Recarga directorio trabajo",
 				"icon": {
 					"dark": "images/icons/dark/refresh.svg",
 					"light": "images/icons/light/refresh.svg"
@@ -113,7 +113,12 @@
 					"when": "resourceExtname == .ino",
 					"command": "serverpic.reload",
 					"group": "navigation"
-				}
+				},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.reload",
+					"group":  "myGroup@1"
+			  }
 			]
 		}
 	},

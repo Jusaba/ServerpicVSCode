@@ -237,10 +237,11 @@ async function DatosPlataforma(cPlataforma) {
 * 
 * @param cDispositivo.- Nombre del dispositivo
 * @param cPlaca.- Npombre de la placa
+* @param lNew.- Indica si es Json para proyecto nuevo o para proyecto existente (1/0)
 *
 * @return Devuelve el objeto Json de configuracion
 */
-exports.CreaJson = async function ( cDispositivo,  cPlaca )
+async function GenJson ( cDispositivo,  cPlaca, lNew )
 {
 		//Seleccionamos plataforma y determinamos la version del compilador instalado
 		const cPlataforma = await Plataforma();
@@ -254,7 +255,13 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 		//Path con la carpeta del proyecto
 	
 		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();	//Determinamos file
-		var cDirTrabajo = `${thisWorkspace}/${cDispositivo}`;						//Añadimos la carpeta del proyecto ( con el nombre del ino )
+		var cDirTrabajo;
+		if ( lNew == 1)																//Si la creacion es para un nuevo proyecto
+		{
+			cDirTrabajo = `${thisWorkspace}/${cDispositivo}`;						//Añadimos la carpeta del proyecto ( con el nombre del ino )
+		}else{																		//si es para uno existente
+			cDirTrabajo = `${thisWorkspace}`;
+		}
 		cDirTrabajo = PathFileToDir(cDirTrabajo);									//Convertimos el file a dir
 		var DirectorioVscode = `${cDirTrabajo}/.vscode`;							//determinamos el directorio .vscode dentro del proyecto
 		DirectorioTrabajo = cDirTrabajo;											//Asignamsop valor a la variable global DirectorioTrabajo
@@ -303,10 +310,24 @@ exports.CreaJson = async function ( cDispositivo,  cPlaca )
 		oJson.directorios[0].librerias['librerias'] = oLibrerias.librerias;
 		oJson.directorios[0].librerias['cores'] = oLibrerias.cores;
 		oLibrerias =  oModelo.librerias[0].genericas;										//Librerias genericas de Serverpic
-		oJson.directorios[0].librerias['genericas'] = oLibrerias.genericas;
-		await CreaServerpicJson(oJson);														//Creamos el fichero		
+		oJson.directorios[0].librerias['genericas'] = oLibrerias.genericas;															//Creamos el fichero		
 		return(oJson);
 }
+/**************************
+* Funcion que genera y graba el json de configuracion del proyecto
+* 
+* @param cDispositivo.- Nombre del dispositivo
+* @param cPlaca.- Npombre de la placa
+* @param lNew.- Indica si es Json para proyecto nuevo o para proyecto existente (1/0)
+*
+*/
+exports.CreaJson = async function (cDispositivo,  cPlaca, lNew)
+{
+	const oJson = await GenJson(cDispositivo,  cPlaca, lNew);
+	console.log(oJson);
+	await CreaServerpicJson(oJson);	
+}
+
 /**************************
 * Funcion que lee un el json del fichero .vscode/serverpic.json de la carpeta de trabajo
 * 
@@ -444,7 +465,7 @@ exports.GrabaParamJson = async function (cParametro, cValor)
 */
 async function CreaServerpicJson (oJson)
 {
-	const cFile = PathDirToFile(oJson.directorios[0].trabajo.dirvscode);
+	const cFile = PathDirToFile(oJson.directorios[0].trabajo.dirvscode);	
 	let serverpicjson = vscode.Uri.parse(`${cFile}/serverpic.json`);
 	we.createFile(serverpicjson, { ignoreIfExists: false, overwrite: true });
 	let DataJson = JSON.stringify(oJson, null, 4);
@@ -505,6 +526,7 @@ console.log('--------------------------');
 		outChannel.appendLine(`Version: ${oJson.version}`);
 
 		outChannel.appendLine(`Nuevo modelo: ${aDatosPlataforma[iModelo]}`);
+		oJson.modelo = aDatosPlataforma[iModelo];
 		oJson.fqbn = aDatosPlataforma[iFqbn];												//Acutalizamos Fqbn en el Json
 		oJson.configuration = aDatosPlataforma[iConfiguracion];								//Actuallizamos la configuracion de compilacion en el Json
 
@@ -550,8 +572,20 @@ console.log('--------------------------');
  */
 exports.DatosPlataformaWork = async function ()
 {
-	var oJson = await LeeServerpicJson();
-	return (DatosPlataforma(oJson.plataforma));
+	const cPath = vscode.workspace.workspaceFolders[0].uri.toString();
+	const aPath = cPath.split('/');
+	const cDispoitivo = aPath [aPath.length-1];
+	const cPlaca = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
+//	const cPlataforma = await Plataforma();
+//	const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
+
+console.log(cPath+'  '+cDispoitivo);
+//console.log(cPlataforma);
+//console.log(cVersionPlataforma);
+//const aDatosPlataforma = DatosPlataforma(cPlataforma);
+this.CreaJson(cDispoitivo, cPlaca, 0);
+	//var oJson = await LeeServerpicJson();
+	//return (DatosPlataforma(oJson.plataforma));
 }
 /***********************************************
  * Funcion que cambia las librerias de Serverpic.h en funcion de la plataforma seleccionada
@@ -562,8 +596,8 @@ async function ChangeLibPlataforma (cPlataforma)
 	var lContenido = 0;
 	const cUsuario = require('os').homedir();
 	var uriLibrerias;
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
-	switch (cPlataforma) {
+	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`						//path de la extensión
+	switch (cPlataforma) {																		//En funcion d ela plataforma, cargamos fichero con los includes
 		case 'esp8266':
 			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp8266.h`);
 			break;
@@ -571,16 +605,16 @@ async function ChangeLibPlataforma (cPlataforma)
 			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp32.h`);
 			break;
 	}
-	let oServerpicLib = await vscode.workspace.openTextDocument(uriLibrerias);
-	let ServerpicLibTexto =  ((await oServerpicLib).getText()); 
+	let oServerpicLib = await vscode.workspace.openTextDocument(uriLibrerias);					//Abrimos el fichero de includes
+	let ServerpicLibTexto =  ((await oServerpicLib).getText()); 								//y cargamos el texto
 
-	var uriServerpich = vscode.Uri.file(`${DirectorioTrabajo}/Serverpic.h`);
+	var uriServerpich = vscode.Uri.file(`${DirectorioTrabajo}/Serverpic.h`);					//Abrimos el fichero Serverpic.h de trabajo
 	let oServerpich = await vscode.workspace.openTextDocument(uriServerpich);
-	let ServerpichTexto =  ((await oServerpich).getText());
+	let ServerpichTexto =  ((await oServerpich).getText());										//y cargamos el texto
 
-	var lineas = ServerpichTexto.split('\n');
+	var lineas = ServerpichTexto.split('\n');													//Hacemos un array con las lineas del fichero Serverpic.h 
 	var nLinea = 0;
-	for(var linea of lineas) {		
+	for(var linea of lineas) {																	//Recorremos el arra
 		if(linea.indexOf('//Librerias') > -1) {
 		  lContenido = 1;
 		  lineas[nLinea] = "#includes#"

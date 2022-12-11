@@ -11,6 +11,7 @@ const port = require ('./SerialPOrt.js');
 const BarraEstado = require ('./StatusBar.js');
 const JsonServerpic = require('./ServerpicJson.js');
 const Ficheros = require ('./Ficheros.js');
+const Snippet = require ('./CreaSnippet.js');
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
@@ -161,7 +162,7 @@ function activate(context) {
 		const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
 
 
-		let oJson = await JsonServerpic.CreaJson(cDispositivo, Placa);
+		let oJson = await JsonServerpic.CreaJson(cDispositivo, Placa, 1);
 
 
 		//Ficheros.SetPathProyecto(DirectorioTrabajo);
@@ -191,7 +192,11 @@ function activate(context) {
 		JsonServerpic.PlataformaWork();
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
-		Compila ();
+		
+		JsonServerpic.DatosPlataformaWork();
+		//Snippet.CreaSnippets();
+		
+		//Compila ();
 		//JsonServerpic.GrabaParamJson('PathCompilador', 'c:/user');
 		//nc();
 		//https://www.configserverfirewall.com/windows-10/netcat-windows/
