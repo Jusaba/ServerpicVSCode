@@ -18,7 +18,7 @@
 #DirLib#             
             ],
             "forcedInclude": [
-                "#Dirusuario#/AppData/Local/Arduino15/packages/#Plataforma#/hardware/#Plataforma#/#Version#/cores/#Plataforma#/Arduino.h"
+                "#forced#"
             ],
             "cStandard": "c11",
             "cppStandard": "c++11",

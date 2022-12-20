@@ -12,26 +12,20 @@
 * --------------------
 * async CreaJson (cDispoitivo, cPlaca).- Crea el Json del proyecto
 * async GetJson ().- Devuelve el json del fichero .vscod/serverpic.json
-* async GrabaServerpicJson (oJson).- Graba oJson en el fichero EXISTENTE .vscode/serverpic.json
 * async LeeParamJson (cParametro).- Lee el fichero .vscode/serverpic.json y devuelve el valor del indicador cParametro
 * async GrabaParamJson (cParametro, cValor).- Lee .vscode/serverpic.json y grava en el identificador cParametro el valor cValor
 *                                       Si no existe el identificador, lo añade como nuevo y vuelve a grabar el fichero .vscode/serverpic.json
 *
-* async DirWork().- Función llamada desde el ino para establecer el directorio de trabajo dentro de este paquete (Serverpicjson.js)
-* async PlataformaWork().- Funcion que permite cambiar la el modelo y la plataforma en un proyecto en trabajo
+* async DirWork().- Pruebas
+* async CambioChip().- Funcion que permite cambiar la el modelo y la plataforma en un proyecto en trabajo
 * async DatosPlataformaWork().- 
+*
 * Funciones internas 
 * ------------------
-* async function Plataforma() .- Presenta las plataformas instaladas y deja seleccionar una
-* async function VersionPlataforma(cPlataforma) .- Devuelve la version instalada de la plataforma
-* async DatosPlataforma (cPlataforma ). Permite seleccionar el modelo de chip de la plataforma
-*                                       Devuelve un array con datos de plataforma, version, chip, fqbn, parmetros de configuracion
-*                                       compilador y direccion del compilador 
+* 
+* async GenJson (cDispositivo, cPlaca).- Genera el Json del proyecto, solicita seleccion de plataforma y chip
 * async CreaServerpicJson (oJson).- Crea el fichero INEXISTENTE .vscode/serverpic.json
-* PathFileToDir().- Convierte path de file a directorio
-* PathDirToFile().- Convierte path de directorio a path de file
-* async LeeServerpicJson().- Lee el fichero Json del proyecto
-* async GrabaServerpicJson (oJson).- Graba el Json oJson en el fichero Json del proyecto
+* async GrabaServerpicJson (oJson).- Graba el Json oJson en el fichero Json del proyecto EXISTENTE
 * async ChangeLibPlataforma (cPlataforma).- Cambia las librerias de Serverpic.h en funcion de la plataforma seleccionada
 *******************************************************/
 'use strict';
@@ -41,7 +35,8 @@ const fs = require('fs');
 const BarraEstado = require ('./StatusBar.js');
 const Ficheros = require ('./Ficheros.js');
 const { Console } = require("console");
-
+const cUsuario = require('os').homedir();
+const Generico = require ('./Generico.js');
 
 const we = new vscode.WorkspaceEdit();
 
@@ -59,218 +54,45 @@ const iDirCompilador = 7;
 //Determinamos path del directorio de tarabjao
 
 var DirectorioTrabajo;
+const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
+const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
+DirectorioTrabajo =  vscode.workspace.workspaceFolders[0].uri.toString();
+var DirectorioVscode = `${DirectorioTrabajo}/.vscode`
+DirectorioTrabajo = Generico.PathFileToDir(DirectorioTrabajo);
+DirectorioVscode = Generico.PathFileToDir(DirectorioVscode);
 
 var outChannel = vscode.window.createOutputChannel('Serverpic');
 
 
-/**************************
-* Funcion que trasnforma un path de file a directorio
-* cambia %20 por espacio, %3A por : .....
-* @param cDirectorio.- Nombre del path file que se quiere convertir
-*
-* @return.- Devuelve el directorio depurado
-*/
-function PathFileToDir ( cFIle )
-{
-	var cPath = (cFIle.toString()).replace('file:///', ``)
-	cPath = cPath.split('%20').join(' ');
-	cPath = cPath.split('%3A').join(':');
-	return(cPath)
-}
-/**************************
-* Funcion que transforma path de dirextorio en path para file
-* cambi %20 por espacio, %3A por : .....
-* @param cDirectorio.- Nombre del directorio que se quiere convertir
-*
-* @return.- Devuelve el path del file
-*/
-function PathDirToFile ( cDirectorio )
-{
-	cPath = cDirectorio.split(':').join('%3A');
-	cPath = cPath.split(' ').join('%20');
-	var cPath = 'file:///'+cPath;
-	return (cPath);
-}
-/**************************
-* Funcion que presenta las plataformas instaladas
-* 
-*/
-async function Plataforma() {
-	const cUsuario = require('os').homedir();
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
-
-	let aPlataformas = [];
-	let JsonPlatforms = fs.readFileSync(`${cPathExtension}\\Placas\\Plataformas.json`);
-	let oPlataformas = JSON.parse(JsonPlatforms);
-	// Array con las plataformas almacenadas en Plataformas.json
-	oPlataformas.Plataformas.forEach(element => {
-		aPlataformas.push(element.name);
-	});
-	//Seleccion plataforma
-	const quickPick = await vscode.window.showQuickPick(aPlataformas, { canPickMany: false, placeHolder: 'Seleccionar Plataforma' });
-	return (`${quickPick}`);
-
-}
-
-/**************************
-* Funcion que devuelve la version instalada de una plataforma
-* 
-* @param cPlataforma.- Plataforma seleccionada en la funcion Plataforma() 
-* @return Devuelve la version isntalada de la plataforma seleccionada
-*
-* Busca en el directorio donde esta instalada la plataforma y con un dir, extrae la version isntalada  
-*
-*/
-async function VersionPlataforma(cPlataforma) 
-{
-	const cUsuario = require('os').homedir();
-	const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
 
 
-	const Directorioesp8266 = `${DirectorioPackages}\\esp8266\\hardware\\esp8266`;
-	const Directorioarduino = `${DirectorioPackages}\\arduino\\hardware\\avr`;
-	const Directorioesp32 = `${DirectorioPackages}\\esp32\\hardware\\esp32`;
-	//En funcion de la plataforma seleccionada, accedemos a su directorio y leemos el nombre de la carpeta que contiene la paltaforma 
-	let cVersion = '';
-	switch (cPlataforma) {
-		case 'arduino':
-			cVersion = fs.readdirSync(`${Directorioarduino}`);
-			break;
-		case 'esp8266':
-			cVersion = fs.readdirSync(`${Directorioesp8266}`);
-			break;
-		case 'esp32':
-			cVersion = fs.readdirSync(`${Directorioesp32}`);
-			break;
-	}
-	return (`${cVersion}`);
-}
-/**************************
-* Funcion para seleccionar el modelo de chip  deseado dentro de la plataforma
-*
-* @param cPlataforma.- Plataforma seleccionada
-*
-* @return Devuelve un array con tres elementos
-*				
-*				[0].- Plataforma
-*				[1].- Version de la plataforma	
-*				[2].- Nombre del modelo de chip seleccionado
-*				[3].- Posicion del modelo dentro del Json
-*				[4].- fqbn del modelo seleccionado
-*				[5].- String con los parametros de configuracion para la compilacion del modelo seleccionada ( Memoria, velocidad, ....)
-* 				[6].- Compilador
-*				[7].- Directorio compilacion
-*
-*/
-async function DatosPlataforma(cPlataforma) {
-	const cUsuario = require('os').homedir();
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
-	let aSalida = [];
-	let aModelos = [];
-	//Abrimos el fichero json con los chip  de la plataforma seleccionada
-	let JsonBoards = fs.readFileSync(`${cPathExtension}\\Placas\\${cPlataforma}.json`);
-	let oBoards = JSON.parse(JsonBoards);
-	aSalida.push(cPlataforma);
-	aSalida.push(VersionPlataforma(cPlataforma));
-	//Hacemos un array con los modelos de chip de la plataforma almacenados en el fichero
-	oBoards.Boards.forEach(element => {
-		aModelos.push(element.name);
-	});
-	//Seleccionamos un chip
-	const quickPick = await vscode.window.showQuickPick(aModelos, { canPickMany: false, placeHolder: 'Seleccionar modelo' });
-	BarraEstado.GrabaModelo(quickPick);
-	//Añadimos al array de salida el modelo de chip
-	aSalida.push(quickPick);
-	//Recorremos el json con las chip  
-	for (var nPosicion in oBoards.Boards) {
-		//cuando encontramos el bloque correpondiente al modelo seleccionado
-		if (oBoards.Boards[nPosicion].name == quickPick) {
-			aSalida.push(nPosicion);											//Posicion del modelo dentro del Json
-			let oJsonConfiguracion = oBoards.Boards[nPosicion].configuracion;
 
-			//Añadimos al array de salida el fqbn
-			aSalida.push(oBoards.Boards[nPosicion].configuracion.fqbn);
-			//generamos la variable configuracion con todos los parametros de configuracion para la compilacion
-			let cConfiguracion = '';
-			if (oJsonConfiguracion["xtal"]) { cConfiguracion = cConfiguracion + `xtal=${oJsonConfiguracion.xtal},`; }
-			if (oJsonConfiguracion["vt"]) { cConfiguracion = cConfiguracion + `vt=${oJsonConfiguracion.vt},`; }
-			if (oJsonConfiguracion["exception"]) { cConfiguracion = cConfiguracion + `exception=${oJsonConfiguracion.exception},`; }
-			if (oJsonConfiguracion["ssl"]) { cConfiguracion = cConfiguracion + `ssl=${oJsonConfiguracion.ssl},`; }
-			if (oJsonConfiguracion["ResetMethod"]) { cConfiguracion = cConfiguracion + `ResetMethod=${oJsonConfiguracion.ResetMethod},`; }
-			if (oJsonConfiguracion["CrystalFreq"]) { cConfiguracion = cConfiguracion + `CrystalFreq=${oJsonConfiguracion.CrystalFreq},`; }
-			if (oJsonConfiguracion["FlashFreq"]) { cConfiguracion = cConfiguracion + `FlashFreq=${oJsonConfiguracion.FlashFreq},`; }
-			if (oJsonConfiguracion["FlashMode"]) { cConfiguracion = cConfiguracion + `FlashMode=${oJsonConfiguracion.FlashMode},`; }
-			if (oJsonConfiguracion["eesz"]) { cConfiguracion = cConfiguracion + `eesz=${oJsonConfiguracion.eesz},`; }
-			if (oJsonConfiguracion["sdk"]) { cConfiguracion = cConfiguracion + `sdk=${oJsonConfiguracion.sdk},`; }
-			if (oJsonConfiguracion["ip"]) { cConfiguracion = cConfiguracion + `ip=${oJsonConfiguracion.ip},`; }
-			if (oJsonConfiguracion["dbg"]) { cConfiguracion = cConfiguracion + `dbg=${oJsonConfiguracion.dbg},`; }
-			if (oJsonConfiguracion["lvl"]) { cConfiguracion = cConfiguracion + `lvl=${oJsonConfiguracion.lvl},`; }
-			if (oJsonConfiguracion["wipe"]) { cConfiguracion = cConfiguracion + `wipe=${oJsonConfiguracion.wipe},`; }
-			if (oJsonConfiguracion["baud"]) { cConfiguracion = cConfiguracion + `baud=${oJsonConfiguracion.baud},`; }
-			if (oJsonConfiguracion["PartitionScheme"]) { cConfiguracion = cConfiguracion + `PartitionScheme=${oJsonConfiguracion.PartitionScheme},`; }
-			if (oJsonConfiguracion["DebugLevel"]) { cConfiguracion = cConfiguracion + `DebugLevel=${oJsonConfiguracion.DebugLevel},`; }
-			if (oJsonConfiguracion["UploadSpeed"]) { cConfiguracion = cConfiguracion + `UploadSpeed=${oJsonConfiguracion.UploadSpeed},`; }
-
-			cConfiguracion = cConfiguracion.substring(0, cConfiguracion.length - 1);
-			//Añadimos al array de salida el string con la configuracion
-			aSalida.push(cConfiguracion);
-		}
-	}
-	switch (cPlataforma) {
-		case 'arduino':
-//Pendiente----------------------------------------------------------------------------------------------------------------------
-//******************************************************************************************************************************* */
-			break;
-		case 'esp8266':
-			aSalida.push('xtensa-lx106-elf-g++')
-			aSalida.push('xtensa-lx106-elf-gcc/2.5.0-4-b40a506')
-			break;
-		case 'esp32':
-			aSalida.push('xtensa-esp32-elf-gcc')
-			aSalida.push('xtensa-esp32-elf-gcc/1.22.0-97-gc752ad5-5.2.0')
-			break;
-	}
-	return (aSalida);
-}
 /**************************
 * Funcion que genera el json de configuracion del proyecto
 * 
 * @param cDispositivo.- Nombre del dispositivo
 * @param cPlaca.- Npombre de la placa
-* @param lNew.- Indica si es Json para proyecto nuevo o para proyecto existente (1/0)
+*
+* Pide seleccionar una plataforma y el chip de la plataforma
 *
 * @return Devuelve el objeto Json de configuracion
 */
-async function GenJson ( cDispositivo,  cPlaca, lNew )
+async function GenJson ( cDispositivo,  cPlaca )
 {
 		//Seleccionamos plataforma y determinamos la version del compilador instalado
-		const cPlataforma = await Plataforma();
-		const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
+		const cPlataforma = await Generico.GetPlataforma();
+		const cVersionPlataforma = await Generico.GetVersionPlataforma(cPlataforma); 
+		const cChip = await Generico.GetChip(cPlataforma);
 		//Obtenemos los datos de la plataforma ( modelo chip, directorios, compilador, .... )
-		const aDatosPlataforma = await DatosPlataforma(cPlataforma);
+		const aDatosPlataforma = await Generico.GetDatosChip(cPlataforma, cChip);
 
-		//Path extension vscode	
-		const cUsuario = require('os').homedir();
-		const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 		//Path con la carpeta del proyecto
-	
-		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();	//Determinamos file
-		var cDirTrabajo;
-		if ( lNew == 1)																//Si la creacion es para un nuevo proyecto
-		{
-			cDirTrabajo = `${thisWorkspace}/${cDispositivo}`;						//Añadimos la carpeta del proyecto ( con el nombre del ino )
-		}else{																		//si es para uno existente
-			cDirTrabajo = `${thisWorkspace}`;
-		}
-		cDirTrabajo = PathFileToDir(cDirTrabajo);									//Convertimos el file a dir
-		var DirectorioVscode = `${cDirTrabajo}/.vscode`;							//determinamos el directorio .vscode dentro del proyecto
-		DirectorioTrabajo = cDirTrabajo;											//Asignamsop valor a la variable global DirectorioTrabajo
-	
+			
 		let oJson =																	//Elaboramos el json		
 		{
 			"dispositivo": cDispositivo,
 			"folder": cDispositivo,
-			"sketch": cDispositivo+'/'+cDispositivo+'.ino',
+			"sketch": cDispositivo+'.ino',
 			"plataforma": cPlataforma,
 			"version": cVersionPlataforma,
 			"modelo": aDatosPlataforma[iModelo],
@@ -296,6 +118,10 @@ async function GenJson ( cDispositivo,  cPlaca, lNew )
 					"librerias":
 					{
 					
+					},
+					"forced":
+					{
+
 					}	
 				}	
 			]
@@ -309,6 +135,7 @@ async function GenJson ( cDispositivo,  cPlaca, lNew )
 		oJson.directorios[0].librerias['include'] = oLibrerias.include;
 		oJson.directorios[0].librerias['librerias'] = oLibrerias.librerias;
 		oJson.directorios[0].librerias['cores'] = oLibrerias.cores;
+		oJson.directorios[0].forced['forced'] = oLibrerias.forced;
 		oLibrerias =  oModelo.librerias[0].genericas;										//Librerias genericas de Serverpic
 		oJson.directorios[0].librerias['genericas'] = oLibrerias.genericas;															//Creamos el fichero		
 		return(oJson);
@@ -318,14 +145,13 @@ async function GenJson ( cDispositivo,  cPlaca, lNew )
 * 
 * @param cDispositivo.- Nombre del dispositivo
 * @param cPlaca.- Npombre de la placa
-* @param lNew.- Indica si es Json para proyecto nuevo o para proyecto existente (1/0)
 *
 */
-exports.CreaJson = async function (cDispositivo,  cPlaca, lNew)
+exports.CreaJson = async function (cDispositivo,  cPlaca )
 {
-	const oJson = await GenJson(cDispositivo,  cPlaca, lNew);
-	console.log(oJson);
+	const oJson = await GenJson(cDispositivo,  cPlaca );
 	await CreaServerpicJson(oJson);	
+	return (oJson);
 }
 
 /**************************
@@ -339,27 +165,16 @@ exports.GetJson = async function ()
     var oServerpicJson = JSON.parse(fServerpicJson);
 	return (oServerpicJson);
 }    
-/**************************
-* Funcion que lee un el json del fichero .vscode/serverpic.json de la carpeta de trabajo
-* 
-* @return Devuelve el objeto Json contenido en el fichero
-*/
-async function LeeServerpicJson ()
-{
-    var fServerpicJson = fs.readFileSync (`${DirectorioTrabajo}/.vscode/serverpic.json`);	//Leemos serverpic.json del dispositivo
-    var oServerpicJson = JSON.parse(fServerpicJson);	
 
-	return (oServerpicJson);
-}    
 /**************************
-* Funcion que graba un Json en el fichero .vscode/serverpic.json
+* Funcion que graba un Json en el fichero .vscode/serverpic.json EXISTENTE
 * 
 * @param oJson.- Parametro que se quiere guardar
 *
 */
 async function GrabaServerpicJson (oJson)
 {
-	fs.writeFileSync(`${DirectorioTrabajo}/.vscode/serverpic.json`, JSON.stringify(oJson));
+	fs.writeFileSync(`${DirectorioTrabajo}/.vscode/serverpic.json`, JSON.stringify(oJson, null, 4));
 }
 /**************************
 * Funcion que lee un parametro de la configuracion almacenada en Serverpic.json
@@ -369,45 +184,8 @@ async function GrabaServerpicJson (oJson)
 */
 exports.LeeParamJson = async function (cParametro)
 {
-	var cDato;
-	var oJson = await LeeServerpicJson ();
-	switch (cParametro) {
-		case 'sketch':
-			cDato = oJson.sketch;
-			break;
-		case 'plataforma':
-			cDato = oJson.plataforma;
-			break;
-		case 'version':
-			cDato = oJson.version;
-			break;
-		case 'modelo':
-			cDato = oJson.modelo;
-			break;
-		case 'fqbn':
-			cDato = oJson.fqbn;
-			break;
-		case 'configuracion':
-			cDato = oJson.configuracion;
-			break;
-		case 'compilador':
-			cDato = oJson.compilador;
-			break;
-		case 'dircompilador':
-			cDato = oJson.dircompilador;
-			break;
-		case 'output':
-			cDato = oJson.output;
-			break;
-		case 'com':
-			cDato = oJson.com;
-			break;
-		case 'baudios':
-			cDato = oJson.baudios;
-			break;
-										
-	}
-	return (cDato);
+	var oJson = await this.GetJson ();
+	return ((oJson[`${cParametro}`]));
 }
 /**************************
 * Funcion que graba un nuevo valor para un parametro de la configuracion almacenada en Serverpic.json
@@ -417,55 +195,18 @@ exports.LeeParamJson = async function (cParametro)
 */
 exports.GrabaParamJson = async function (cParametro, cValor)
 {
-
-	var oJson = await LeeServerpicJson ();
-	switch (cParametro) {
-		case 'sketch':
-			oJson.sketch = cValor;
-			break;
-		case 'plataforma':
-			oJson.plataforma = cValor;
-			break;
-		case 'version':
-			oJson.version = cValor;
-			break;
-		case 'board':
-			oJson.modelo = cValor;
-			break;
-		case 'fqbn':
-			oJson.fqbn = cValor;
-			break;
-		case 'configuracion':
-			oJson.configuracion = cValor;
-			break;
-		case 'compilador':
-			oJson.compilador = cValor;
-			break;
-		case 'dircompilador':
-			oJson.dircompilador = cValor;
-			break;
-		case 'output':
-			oJson.output = cValor;
-			break;
-		case 'com':
-			oJson.com = cValor;
-			break;
-		case 'baudios':
-			oJson.baudios = cValor;
-			break;						
-		default :
-			oJson[cParametro]=cValor;
-	}
+	var oJson = await this.GetJson ();
+	oJson[`${cParametro}`] = cValor;
 	await GrabaServerpicJson (oJson);
 }	
 /**************************
-* Funcion que crea el fichero .vscode/serverpic.json
+* Funcion que crea el fichero .vscode/serverpic.json INEXISTENTE
 *
 * Como parametro utiliza la variable global  oJson con el json del proyecto
 */
 async function CreaServerpicJson (oJson)
 {
-	const cFile = PathDirToFile(oJson.directorios[0].trabajo.dirvscode);	
+	const cFile = Generico.PathDirToFile(oJson.directorios[0].trabajo.dirvscode);	
 	let serverpicjson = vscode.Uri.parse(`${cFile}/serverpic.json`);
 	we.createFile(serverpicjson, { ignoreIfExists: false, overwrite: true });
 	let DataJson = JSON.stringify(oJson, null, 4);
@@ -480,29 +221,41 @@ async function CreaServerpicJson (oJson)
 * actualiza la barra de estado con los datos guardados en el Json
 * 
 */
-exports.DirWork = async function ()
+
+exports.Prueba = async function ()
 {
+/*
 	var cPath = vscode.workspace.workspaceFolders[0].uri.toString();
 	window.showInformationMessage(cPath);
 	DirectorioTrabajo =  PathFileToDir(cPath);
-	var oJson = await LeeServerpicJson();
+	var oJson = await this.GetJson();
 	BarraEstado.GrabaCom(oJson.com);
 	BarraEstado.GrabaBaudios(oJson.baudios);
 	BarraEstado.GrabaModelo(oJson.modelo);
+*/
+var oJson = await this.GetJson ();
+const cParametro = 'plataforma';
+
+console.log('---------------------------');
+console.log(DirectorioTrabajo);
+console.log (oJson[`${cParametro}`]);
+console.log('---------------------------');
+oJson[`${cParametro}`] ='llllll';
+await GrabaServerpicJson (oJson);
 }
+
 /**************************
 * Funcion que permite seleccionar una plataforma y/o modelo distintos
 * actualiza la barra de estado, el json y genera un nuevo intellisense
 */
-exports.PlataformaWork =   async function ()
+exports.CambioChip =   async function ()
 {
 	outChannel.clear();																		//Borramos la ventana de salida
 	//Path extension vscode	
-	const cUsuario = require('os').homedir();
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`					//Directorio de la extensión
-	var oJson = await LeeServerpicJson();													//Cargamos el json
-	const cPlataforma = await Plataforma();													//Seleccionamos plataforma
-	const aDatosPlataforma = await DatosPlataforma(cPlataforma);							//Seleccionamos modelo y cargamos los datos de la plataforma y del modelo en aDatosPlataforma
+	var oJson = await this.GetJson();														//Cargamos el json
+	const cPlataforma = await Generico.GetPlataforma();										//Seleccionamos plataforma
+	const cChip = await Generico.GetChip(cPlataforma);											
+	const aDatosPlataforma = await Generico.GetDatosChip(cPlataforma, cChip);						//Seleccionamos modelo y cargamos los datos de la plataforma y del modelo en aDatosPlataforma
 	const cPlataformaOld = oJson.plataforma;												//Cargamos la plataforma actual
 	const cModeloOld=oJson.modelo;															//Cargamos el modelo actual
 console.log('--------------------------');
@@ -522,7 +275,7 @@ console.log('--------------------------');
 
 		outChannel.appendLine(`Nueva plataforma: ${aDatosPlataforma[iPlataforma]}`);				
 		oJson.plataforma = aDatosPlataforma[iPlataforma];									//Actualizamos los datos de plataforma en el Json
-		oJson.version = await VersionPlataforma(aDatosPlataforma[iPlataforma]);				//Actualizamos la version en el Json
+		oJson.version = await Generico.GetVersionPlataforma(aDatosPlataforma[iPlataforma]);				//Actualizamos la version en el Json
 		outChannel.appendLine(`Version: ${oJson.version}`);
 
 		outChannel.appendLine(`Nuevo modelo: ${aDatosPlataforma[iModelo]}`);
@@ -545,11 +298,12 @@ console.log('--------------------------');
 		oJson.directorios[0].librerias['include'] = oLibrerias.include;						//Actualizamos el Json con las librerias de la plataforma
 		oJson.directorios[0].librerias['librerias'] = oLibrerias.librerias;
 		oJson.directorios[0].librerias['cores'] = oLibrerias.cores;
-		
+		oJson.directorios[0].forced['forced'] = oLibrerias.forced;
+
 		outChannel.appendLine(`Generando Intellisense`);					
 		Ficheros.CreateIntellisenseWork (oJson);											//Generamos c_cpp_properties.json
 		outChannel.appendLine(`Generando el nuevo Json`);				
-		GrabaServerpicJson (oJson);															//Guardamos el nuevo Json
+		await GrabaServerpicJson (oJson);															//Guardamos el nuevo Json
 	}else{																					//Si solo ha habido cambio de modelo y no de plataforma
 		if ( cModeloOld != aDatosPlataforma[iModelo])
 		{
@@ -572,19 +326,20 @@ console.log('--------------------------');
  */
 exports.DatosPlataformaWork = async function ()
 {
-	const cPath = vscode.workspace.workspaceFolders[0].uri.toString();
-	const aPath = cPath.split('/');
-	const cDispoitivo = aPath [aPath.length-1];
-	const cPlaca = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
-//	const cPlataforma = await Plataforma();
-//	const cVersionPlataforma = await VersionPlataforma(cPlataforma); 
 
-console.log(cPath+'  '+cDispoitivo);
-//console.log(cPlataforma);
-//console.log(cVersionPlataforma);
-//const aDatosPlataforma = DatosPlataforma(cPlataforma);
-this.CreaJson(cDispoitivo, cPlaca, 0);
-	//var oJson = await LeeServerpicJson();
+	const cDispositivo = await Generico.GetDispositivo();
+	const cPlaca = await Generico.GetPlaca();
+	const cPlataforma = await Generico.GetPlataforma();
+	const cVersionPlataforma = await Generico.GetVersionPlataforma(cPlataforma);
+	const cChip = await Generico.GetChip(cPlataforma);
+
+	await Generico.GetDatosChip(cPlataforma, cChip);
+console.log(cDispositivo+'  '+cPlaca+'  '+cPlataforma+'  '+cVersionPlataforma+'  '+cChip);
+console.log(cPlataforma);
+console.log(cVersionPlataforma);
+const aDatosPlataforma = await Generico.GetDatosChip(cPlataforma, cChip);
+console.log('Si');
+//this.CreaJson(cDispositivo, cPlaca, 0);
 	//return (DatosPlataforma(oJson.plataforma));
 }
 /***********************************************
@@ -594,9 +349,7 @@ this.CreaJson(cDispoitivo, cPlaca, 0);
 async function ChangeLibPlataforma (cPlataforma)
 {
 	var lContenido = 0;
-	const cUsuario = require('os').homedir();
 	var uriLibrerias;
-	const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`						//path de la extensión
 	switch (cPlataforma) {																		//En funcion d ela plataforma, cargamos fichero con los includes
 		case 'esp8266':
 			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp8266.h`);

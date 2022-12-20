@@ -1,4 +1,4 @@
-    //Librerias ESP32
+    //Librerias LoRa 32
     //Aruino & ESP32
     #include <WebServer.h>
     #include "esp_camera.h"
@@ -27,4 +27,14 @@
     #include <BLEEddystoneURL.h>
     #include <BLEEddystoneTLM.h>
     #include <BLEBeacon.h>
-    //Fin librerias ESP32
+    
+    // Lora
+    #include <LoRa.h>
+    #include <SPI.h>
+    #include <Wire.h>
+
+    //Pantalla
+    #include <Adafruit_GFX.h>
+    #include <Adafruit_SSD1306.h>
+    //Fin librerias LoRa 32
+    

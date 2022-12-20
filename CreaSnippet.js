@@ -87,13 +87,46 @@ async function Crea_ESP8266Lib()
     return (cSnippet);   
 
 }
+/**************************
+* Funcion que crea el snipet LORA32Lib
+* Crea LORA32Lib para introcudir las librerias de LORA32Lib en Serverpic.h
+* includeHeltec-esp32.h debe acabar en una linea en blanco por que la funcion en cada linea elimina el 
+* ultimo caracter que es \n, si no introducimos esa linea en blnco nos corta el ultimo caracter de la ultima linea
+*
+* @return Retorna elcodigo del snippet
+*/
+async function Crea_LORA32Lib()
+{
+    const uriFileIncludeHeltecesp32 = vscode.Uri.file(`${cPathExtension}/Plantillas/includeHeltec-esp32.h`);
+	let oIncludeHeltecesp32 = await vscode.workspace.openTextDocument(uriFileIncludeHeltecesp32);	//Abrimos el fichero de includes
+	let IncludeHeltecesp32LibTexto =  ((await oIncludeHeltecesp32).getText()); 								//y cargamos el texto
+    IncludeHeltecesp32LibTexto = IncludeHeltecesp32LibTexto.split('"').join('\\\"');	                    //Sustituimos " por \"
+    var aLineas = IncludeHeltecesp32LibTexto.split('\n');												//Hacemos un array con las lineas del texto con los includes
+    var nlinea = 0;
+    for(var linea of aLineas) {	
+        aLineas[nlinea] = '"'+aLineas[nlinea].substring(0, aLineas[nlinea].length -1)+'",';	
+        nlinea++;
+    }
+    IncludeHeltecesp32LibTexto =  aLineas.join('\n');  
+    var cSnippet = "\"LORA32Lib\": {"+'\n';
+    cSnippet = cSnippet +"  \"prefix\": \"LORA32Lib\","+'\n';
+    cSnippet = cSnippet +"  \"body\":["+'\n';
+    cSnippet = cSnippet + IncludeHeltecesp32LibTexto+'\n';
+    cSnippet = cSnippet + " ],"+'\n';
+    cSnippet = cSnippet + "\"description\": \"Librerias LoRa 32 para Serverpic.h\""+'\n';
+    cSnippet = cSnippet +"}";
 
+    return (cSnippet);   
+
+}
 exports.CreaSnippets= async function()
 {
     var cSnippet = "{"+'\n';
     cSnippet = cSnippet + await Crea_ESP32Lib();
     cSnippet = cSnippet + ","+'\n';
     cSnippet = cSnippet + await Crea_ESP8266Lib();
+    cSnippet = cSnippet + ","+'\n';
+    cSnippet = cSnippet + await Crea_LORA32Lib();
     cSnippet = '\n'+cSnippet + "}"+'\n';
     console.log(cSnippet);
 }

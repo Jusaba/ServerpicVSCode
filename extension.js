@@ -12,53 +12,20 @@ const BarraEstado = require ('./StatusBar.js');
 const JsonServerpic = require('./ServerpicJson.js');
 const Ficheros = require ('./Ficheros.js');
 const Snippet = require ('./CreaSnippet.js');
+const Generico = require ('./Generico.js');
+
 
 //Configuracion directorios
 //Se debe estudiar si esto se permite configurar desde la configuracion de la extension
 const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 const DirectorioPackages = `${cUsuario}\\AppData\\Local\\Arduino15\\packages`;
-
+const DirectorioTrabajo =  vscode.workspace.workspaceFolders[0].uri.toString();
+const DirectorioVscode = `${DirectorioTrabajo}/.vscode`
 
 var aBoard ;
 
 
-async function LeeDirectorio (cDirectorio)
-{
-	var cDirTot = '';
-	var cDirInd = '';
 
-	cDirTot = cDirTot+'\t\t\t\t'+'\"'+(cDirectorio.substring(0, cDirectorio.length - 1))+'\",'+'\n';	//Directorio contenedor
-	let files = fs.readdirSync(cDirectorio)																//Leemos el contenido del directorio
-	files.forEach(file => {																				//Recorremos el contenido
-		cDirInd = cDirectorio+file;																		//Añadimos todo el path al objetivo
-		var stat = fs.statSync(cDirInd)																	//Miramos de que tipo es el objetivo 
-		if (stat.isDirectory())																			//Si es un directorio
-		{
-			if (fs.existsSync(cDirInd+'/src'))															//Miramos si en el hay otro directorio src
-			{
-				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'/src\",'+'\n';								//Si lo hay agragamos el directorio src
-			}else{
-				cDirTot = cDirTot+'\t\t\t\t'+'\"'+cDirInd+'\",'+'\n';									//Si no, el directorio original
-			}
-		}
-	})
-	return (cDirTot);
-}
-/**************************
-* Funcion que chekea la exisencia de un directorio
-* 
-* @param cDirectorio.- Directorio que se desea checkear
-* @return Devuelve true si existe el directorio, false en caso contrario
-*/
-async function ChckDirExists (cDirectorio)
-{
-	var lSalida = false;
-	if (fs.existsSync(cDirectorio))
-	{
-		lSalida = true;
-	}
-	return ( lSalida);
-}
 
 function CheckModelo()
 {	var lSalida = false;
@@ -150,20 +117,16 @@ function activate(context) {
 
 	
 		window.showInformationMessage('Bienvenido a Serverpic 1.0');
-		const cDispositivo = await window.showInputBox({ placeHolder: 'Teclee nombre de dispositivo' })
-		const Placa = await window.showInputBox({ placeHolder: 'Teclee nombre de la placa a utilizar' })
+		const cDispositivo = await Generico.GetDispositivo();
+		const cPlaca = await Generico.GetPlaca();
 
+		console.log(cDispositivo);
+		console.log(cPlaca);
 
 		let Fecha = new Date();
 		Fecha = Fecha.toLocaleDateString();
-		const we = new vscode.WorkspaceEdit();
-		const thisWorkspace = vscode.workspace.workspaceFolders[0].uri.toString();
-		const DirectorioTrabajo = `${thisWorkspace}/${cDispositivo}`;
-		const DirectorioVscode = `${thisWorkspace}/${cDispositivo}/.vscode`;
 
-
-		let oJson = await JsonServerpic.CreaJson(cDispositivo, Placa, 1);
-
+		let oJson = await JsonServerpic.CreaJson(cDispositivo, cPlaca);
 
 		//Ficheros.SetPathProyecto(DirectorioTrabajo);
 		Ficheros.CreaArchivos(oJson);
@@ -177,7 +140,6 @@ function activate(context) {
 		var outChannel = vscode.window.createOutputChannel('Serverpic');
 		outChannel.clear();
 		outChannel.appendLine("[Start] Monitor");
-		
 		Monitor();
 
 	});
@@ -189,12 +151,12 @@ function activate(context) {
 		await port.BaudioSel (); 
 	});	
 	let disposable4 = vscode.commands.registerCommand("serverpic.ModeloSel", async () => {
-		JsonServerpic.PlataformaWork();
+		JsonServerpic.CambioChip();
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
 		
-		JsonServerpic.DatosPlataformaWork();
-		//Snippet.CreaSnippets();
+		//JsonServerpic.DatosPlataformaWork();
+		Snippet.CreaSnippets();
 		
 		//Compila ();
 		//JsonServerpic.GrabaParamJson('PathCompilador', 'c:/user');
@@ -208,7 +170,7 @@ function activate(context) {
 		nc (); 
 	});	
 	let disposable8 = vscode.commands.registerCommand("serverpic.reload", async () => {
-		JsonServerpic.DirWork();		
+		JsonServerpic.Prueba();		
 	});	
 
 	context.subscriptions.push(disposable);

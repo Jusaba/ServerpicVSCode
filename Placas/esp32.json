@@ -37,7 +37,8 @@
 				{
 					"include" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/tools/sdk/include/",
 					"librerias" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/libraries/",
-					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/cores/esp32/"
+					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#version#/cores/esp32/",
+					"forced" : "#Dirusuario#/AppData/Local/Arduino15/packages/esp32/hardware/esp32/#Version#/cores/esp32/Arduino.h"
 				},
 				"genericas":
 				{

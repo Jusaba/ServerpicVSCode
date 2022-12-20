@@ -26,7 +26,6 @@
 * async CreaProperties(lWork).- Crea el fichero c_cpp_properties.json
 * 
 * async ChckDirExists (cDirectorio). Chekea la existencia de un directorio
-* async ChecDirDocuments (). Deterina si existe el directorio Documentos o Documents
 * async GenDir (cDirectorio). Sustituye en una cadena de direcotio los parametros #..# por sus valores reales
 * async LeeDirectorio (cDirectorio). Devuelve una cadena con todos los directorios contenidos en cDirectorio
 * async Create_Intellisense (). Obtenemos un listado de todos los directorios con librerias para intellisense
@@ -36,8 +35,8 @@
 *******************************************************/
 const vscode = require("vscode");
 const we = new vscode.WorkspaceEdit();
+const Generico = require ('./Generico.js');
 
-var cPathProyecto;														//Directorio del proyecto
 let Fecha = new Date();													//Fecha para las cabeceras de los ficheros
 Fecha = Fecha.toLocaleDateString();	
 const cUsuario = require('os').homedir();								//Directorio usuario
@@ -48,20 +47,9 @@ var oJson;																//Json con la información del proyecto
 const JsonServerpic = require('./ServerpicJson.js');
 const { Console } = require("console");
 
-/**************************
-* Funcion que transforma path de dirextorio en path para file
-* cambi %20 por espacio, %3A por : .....
-* @param cDirectorio.- Nombre del directorio que se quiere convertir
-*
-* @return.- Devuelve el path del file
-*/
-function PathDirToFile ( cDirectorio )
-{
-	cPath = cDirectorio.split(':').join('%3A');
-	cPath = cPath.split(' ').join('%20');
-	var cPath = 'file:///'+cPath;
-	return (cPath);
-}
+var cPathProyecto;														//Directorio del proyecto
+
+
 /**************************
 * Funcion que crea los distintos ficheros del proyecto
 * 
@@ -72,7 +60,7 @@ exports.CreaArchivos = async function (oServerpicJson)
 {
     oJson = oServerpicJson;											//Asignamos el Json a la variable global
     cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
-    cPathProyecto = PathDirToFile(cPathProyecto);
+    cPathProyecto = Generico.PathDirToFile(cPathProyecto);
 
      var aFicheros = [];											//Array donde se almacenaran los punteros de los ficheros
 
@@ -157,10 +145,13 @@ async function CreaServerpic ()
 		case 'esp32':
 			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeesp32.h`);
 			break;
+		case 'Heltec-esp32':
+			uriLibrerias = vscode.Uri.file(`${cPathExtension}/Plantillas/includeHeltec-esp32.h`);
+			break;
 	}
 	let oServerpicLib = await vscode.workspace.openTextDocument(uriLibrerias);
 	let ServerpicLibTexto =  ((await oServerpicLib).getText()); 
-	ServerpicTexto =    (ServerpicTexto.toString()).replace('#includes', ServerpicLibTexto );                                                  
+	ServerpicTexto =    (ServerpicTexto.toString()).replace('#includes#', ServerpicLibTexto );                                                  
 	we.insert(Serverpic, new vscode.Position(0, 0), ServerpicTexto);                                                           //Grabamos la informacion en Serverpic.h
 	await vscode.commands.executeCommand('workbench.action.closeActiveEditor');         
     return(Serverpic);
@@ -257,12 +248,13 @@ async function CreaProperties (lWork)
 {
     let Properties = vscode.Uri.parse(`${cPathProyecto}/.vscode/c_cpp_properties.json`);
     we.createFile(Properties, { ignoreIfExists: false, overwrite: true });
- 	let uriProperties = vscode.Uri.file(`${cPathExtension}/Plantillas/c_cpp_properties.jso_`);                                                    //Establecemos el path de la plantilla TeamCity
-	let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                                               //Cargamos la plantilla TeamCity
-	let PropertiesTexto = ((await oPropertiesTexto).getText());                                                                             //Extraemos el texto de la plantilla    
+ 	let uriProperties = vscode.Uri.file(`${cPathExtension}/Plantillas/c_cpp_properties.jso_`);                      //Establecemos el path de la plantilla TeamCity
+	let oPropertiesTexto = vscode.workspace.openTextDocument(uriProperties);                                        //Cargamos la plantilla c_cpp_properties
+	let PropertiesTexto = ((await oPropertiesTexto).getText());                                                     //Extraemos el texto de la plantilla    
     let cDirUsuario = cUsuario.split('\\').join('/');
 
-	PropertiesTexto = PropertiesTexto.split('#Dirusuario#').join(cDirUsuario);																	//Hacemos las sustituciones permanantes
+	PropertiesTexto = PropertiesTexto.split('#forced#').join(oJson.directorios[0].forced.forced);					//Directorio forcedInclude  almacenado en el json de la plataforma en el que se deben sustituir parametros cuando este en c_cpp_properties
+	PropertiesTexto = PropertiesTexto.split('#Dirusuario#').join(cDirUsuario);										//Hacemos las sustituciones pertinentes
 	PropertiesTexto = PropertiesTexto.split('#Plataforma#').join(oJson.plataforma);
 	PropertiesTexto = PropertiesTexto.split('#Version#').join(oJson.version);
 	PropertiesTexto = PropertiesTexto.split('#DirCompilador#').join(oJson.directorios[0].plataforma.dircompilador);
@@ -277,36 +269,8 @@ async function CreaProperties (lWork)
 }
 
 
-/**************************
-* Funcion que chekea la exisencia de un directorio
-* 
-* @param cDirectorio.- Directorio que se desea checkear
-* @return Devuelve true si existe el directorio, false en caso contrario
-*/
-async function ChckDirExists (cDirectorio)
-{
-	var lSalida = false;
-	if (fs.existsSync(cDirectorio))
-	{
-		lSalida = true;
-	}
-	return ( lSalida);
-}
-/**************************
-* Funcion que  comprueba si el ordenador tiene el directorio Documents o Documentos
-* 
-* @return Devuelve el nombre del directorio existente
-*/
-async function ChecDirDocuments ()
-{
-	var cSalida = 'Documents';
-	let cDirUsuario =  cUsuario.split('\\').join('/');
-	if (await ChckDirExists (cDirUsuario+'/Documentos'))
-	{
-		cSalida = 'Documentos';
-	}
-	return(cSalida);
-}
+
+
 /**************************
 * Funcion que en un directorio del json los parametros #...# por su contenido real 
 * 
@@ -322,7 +286,7 @@ async function GenDir (cDirectorio)
 	cDir = (cDir.toString()).replace('#usuario#', cDirUsuario);
     cDir = (cDir.toString()).replace('#version#', oJson.version);
 	cDir = (cDir.toString()).replace('#modelo#', oJson.modelo);
-	cDir = (cDir.toString()).replace('#documentos#', await ChecDirDocuments());
+	cDir = (cDir.toString()).replace('#documentos#', await Generico.ChecDirDocuments());
 
     return(cDir);
 }
@@ -377,7 +341,6 @@ async function Create_Intellisense ()
 	for ( let nElelmento = 0;nElelmento<claves.length;nElelmento++)     //Para cada uno de ellos
 	{
 		cDirectorio = claves[nElelmento];								//Obtenemos el path con parametros funcion de la plataforma
-console.log(cDirectorio);
 		cDirectorio = await GenDir(cDirectorio);						//Sustituimos los parametros por sus valores reales
 		cListaLib = cListaLib + await LeeDirectorio(cDirectorio);		//Obtenemos una cadena con todos los directorios contenidos en ese directorio y se lo añadimos al resultado anterior
 	}
@@ -389,7 +352,7 @@ exports.CreateIntellisenseWork = async function (oJsonTmp)
 {
 	oJson = oJsonTmp;
     cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
-    cPathProyecto = PathDirToFile(cPathProyecto);
+    cPathProyecto = Generico.PathDirToFile(cPathProyecto);
 
 	var fProperties = 	await CreaProperties (1);
 

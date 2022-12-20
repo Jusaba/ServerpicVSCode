@@ -131,7 +131,8 @@
 				{
 					"include" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/tools/sdk/include/",
 					"librerias" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/libraries/",
-					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/cores/esp8266/"
+					"cores" : "#usuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#version#/cores/esp8266/",
+					"forced": "#Dirusuario#/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/#Version#/cores/esp8266/Arduino.h"
 				},
 				"genericas":
 				{
