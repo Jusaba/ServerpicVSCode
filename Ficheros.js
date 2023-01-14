@@ -11,7 +11,7 @@
 * Funciones exportadas
 * --------------------
 * async CreaArchivos(oJson) .- Función que crea los distintos archivos del proyecto
-* async CreaIntellisenseWork().-
+* async GeneraPorperties().- Funcion que genera el fichero .vscode/c_cpp_properties en un proyecto existente con .vscode/serverpic.json existente
 *
 * Funciones internas 
 * ------------------
@@ -25,12 +25,10 @@
 * async CreaUpload().- Crea el fichero Upload.bat
 * async CreaProperties(lWork).- Crea el fichero c_cpp_properties.json
 * 
-* async ChckDirExists (cDirectorio). Chekea la existencia de un directorio
-* async GenDir (cDirectorio). Sustituye en una cadena de direcotio los parametros #..# por sus valores reales
-* async LeeDirectorio (cDirectorio). Devuelve una cadena con todos los directorios contenidos en cDirectorio
+* async ReplaceParamsInPath (cDirectorio). Sustituye en una cadena de direcotio los parametros #..# por sus valores reales
+* async ListDirInPath (cDirectorio). Devuelve una cadena con todos los directorios contenidos en cDirectorio
 * async Create_Intellisense (). Obtenemos un listado de todos los directorios con librerias para intellisense
 *
-* PahtDirToFile().- Convierte un path de directorio en un path de file
 * 
 *******************************************************/
 const vscode = require("vscode");
@@ -47,7 +45,7 @@ var oJson;																//Json con la información del proyecto
 const JsonServerpic = require('./ServerpicJson.js');
 const { Console } = require("console");
 
-var cPathProyecto;														//Directorio del proyecto
+var cPathProyecto  = vscode.workspace.workspaceFolders[0].uri.toString();;														//Directorio del proyecto
 
 
 /**************************
@@ -59,8 +57,8 @@ var cPathProyecto;														//Directorio del proyecto
 exports.CreaArchivos = async function (oServerpicJson)
 {
     oJson = oServerpicJson;											//Asignamos el Json a la variable global
-    cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
-    cPathProyecto = Generico.PathDirToFile(cPathProyecto);
+    //cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
+    //cPathProyecto = Generico.PathDirToFile(cPathProyecto);
 
      var aFicheros = [];											//Array donde se almacenaran los punteros de los ficheros
 
@@ -267,10 +265,6 @@ async function CreaProperties (lWork)
 	}
 	return(Properties);
 }
-
-
-
-
 /**************************
 * Funcion que en un directorio del json los parametros #...# por su contenido real 
 * 
@@ -279,7 +273,7 @@ async function CreaProperties (lWork)
 *
 * @return Devuelve el directorio real
 */
-async function GenDir (cDirectorio)
+async function ReplaceParamsInPath (cDirectorio)
 {
     let cDirUsuario =  cUsuario.split('\\').join('/');
     var cDir = cDirectorio;
@@ -301,7 +295,7 @@ async function GenDir (cDirectorio)
 * 
 * @return Devuelve el listado de directorios contenidos en cDirecotrio
 */
-async function LeeDirectorio (cDirectorio)
+async function ListDirInPath (cDirectorio)
 {
 	var cDirTot = '';
 	var cDirInd = '';
@@ -341,23 +335,22 @@ async function Create_Intellisense ()
 	for ( let nElelmento = 0;nElelmento<claves.length;nElelmento++)     //Para cada uno de ellos
 	{
 		cDirectorio = claves[nElelmento];								//Obtenemos el path con parametros funcion de la plataforma
-		cDirectorio = await GenDir(cDirectorio);						//Sustituimos los parametros por sus valores reales
-		cListaLib = cListaLib + await LeeDirectorio(cDirectorio);		//Obtenemos una cadena con todos los directorios contenidos en ese directorio y se lo añadimos al resultado anterior
+		cDirectorio = await ReplaceParamsInPath(cDirectorio);			//Sustituimos los parametros por sus valores reales
+		cListaLib = cListaLib + await ListDirInPath(cDirectorio);		//Obtenemos una cadena con todos los directorios contenidos en ese directorio y se lo añadimos al resultado anterior
 	}
 	cListaLib = cListaLib.substring(0, cListaLib.length-2); 			//Le quitamos la ultima coma
 	return(cListaLib);
 } 
-
-exports.CreateIntellisenseWork = async function (oJsonTmp)
+/**************************
+* Funcion que genera el fichero .vscode/c_cpp_properties.json 
+* Esta función es exportada y sirve para crear el fichero una vez creado el proyecto
+* ES NECESARIO QUE EXISTA serverpic.json
+*/
+exports.GeneraPorperties = async function ()
 {
-	oJson = oJsonTmp;
-    cPathProyecto = oJson.directorios[0].trabajo.dirtrabajo;		//Obtenemos el directorio del proyecto 
-    cPathProyecto = Generico.PathDirToFile(cPathProyecto);
-
+	oJson = await JsonServerpic.GetJson();
 	var fProperties = 	await CreaProperties (1);
-
-	await vscode.workspace.applyEdit(we);							//Cerramos los distintos ficheros	
+	await vscode.workspace.applyEdit(we);								
 	let document = await vscode.workspace.openTextDocument(fProperties); 
 	await document.save(); 
-
 }

@@ -279,3 +279,29 @@ async function ChckDirExists (cDirectorio)
 	}
 	return ( lSalida);
 }
+/**************************
+* Funcion que borra el fichero .vscode/serverpic.json
+* 
+*/
+exports.BorraJson = async function ()
+{
+	const cPath = this.PathFileToDir(DirectorioVscode+'/serverpic.json');
+
+	if (ChckDirExists(cPath))
+	{
+		fs.unlinkSync(cPath);
+	}	
+}
+/**************************
+* Funcion que borra el fichero .vscode/c_cpp_properties.json
+* 
+*/
+exports.BorraProperties = async function ()
+{
+	const cPath = this.PathFileToDir(DirectorioVscode+'/c_cpp_properties.json');
+
+	if (ChckDirExists(cPath))
+	{
+		fs.unlinkSync(cPath);
+	}	
+}	

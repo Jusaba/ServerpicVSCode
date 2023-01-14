@@ -29,20 +29,20 @@
 				}
 			},
 			{
-					"command": "serverpic.monitor",
-					"title": "Serverpic Monitor",
-					"icon": {
-						"dark": "images/icons/dark/terminal.svg",
-						"light": "images/icons/light/terminal.svg"
-					}
+				"command": "serverpic.monitor",
+				"title": "Serverpic Monitor",
+				"icon": {
+					"dark": "images/icons/dark/terminal.svg",
+					"light": "images/icons/light/terminal.svg"
+				}
 			},
 			{
-					"command": "serverpic.compila",
-					"title": "Serverpic Compilar",
-					"icon": {
-						"dark": "images/icons/dark/run.svg",
-						"light": "images/icons/light/run.svg"
-					}
+				"command": "serverpic.compila",
+				"title": "Serverpic Compilar",
+				"icon": {
+					"dark": "images/icons/dark/run.svg",
+					"light": "images/icons/light/run.svg"
+				}
 			},
 			{
 				"command": "serverpic.upload",
@@ -79,7 +79,16 @@
 			{
 				"command": "serverpic.ModeloSel",
 				"title": "Serverpic Select Model"
-			}						
+			},		
+			{
+				"command": "serverpic.CreaJson",
+				"title": "Serverpic crea .vscde/serverpic.json"
+			},					
+			{
+				"command": "serverpic.CreaProperties",
+				"title": "Serverpic crea .vscde/c_cpp_properties.json"
+			}		
+
 		],
 		
 		"menus": {
@@ -118,7 +127,17 @@
 					"when": "resourceExtname == .ino",
 					"command": "serverpic.reload",
 					"group":  "myGroup@1"
-			  }
+			  	},
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.CreaJson",
+					"group":  "myGroup@1"
+			  	},				
+				{
+					"when": "resourceExtname == .ino",
+					"command": "serverpic.CreaProperties",
+					"group":  "myGroup@1"
+				}
 			]
 		}
 	},

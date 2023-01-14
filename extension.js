@@ -155,7 +155,7 @@ function activate(context) {
 	});	
 	let disposable5 = vscode.commands.registerCommand("serverpic.compila", async () => {
 		
-		//JsonServerpic.DatosPlataformaWork();
+		//JsonServerpic.RegeneraJson();
 		Snippet.CreaSnippets();
 		
 		//Compila ();
@@ -172,6 +172,13 @@ function activate(context) {
 	let disposable8 = vscode.commands.registerCommand("serverpic.reload", async () => {
 		JsonServerpic.Prueba();		
 	});	
+	let disposable9 = vscode.commands.registerCommand("serverpic.CreaProperties", async () => {
+		Ficheros.GeneraPorperties();		
+	});	
+	;	
+	let disposable10 = vscode.commands.registerCommand("serverpic.CreaJson", async () => {
+		JsonServerpic.RegeneraJson();		
+	});	
 
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(disposable1);
@@ -182,6 +189,8 @@ function activate(context) {
 	context.subscriptions.push(disposable6);
 	context.subscriptions.push(disposable7);
 	context.subscriptions.push(disposable8);
+	context.subscriptions.push(disposable9);
+	context.subscriptions.push(disposable10);
 }	
 
 

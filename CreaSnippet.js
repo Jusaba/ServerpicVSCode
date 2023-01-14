@@ -7,14 +7,11 @@
 * @date Diciembre 2022
 *
 */
-/**************************
-* Funcion que crea el snipet ESP32Lib
-* Crea ESP32Lib para introcudir las librerias de ESP32 en Serverpic.h
-* Includeesp32.h debe acabar en una linea en blanco por que la funcion en cada linea elimina el 
-* ultimo caracter que es \n, si no introducimos esa linea en blnco nos corta el ultimo caracter de la ultima linea
-*
-* @return Retorna elcodigo del snippet
-*/
+
+//https://blog.webdevsimplified.com/2022-03/vscode-snippet/
+//https://marcomadera.com/blog/snippets-en-vscode
+
+
 'use strict';
 const { window } = require("vscode")
 const vscode = require("vscode")
@@ -23,6 +20,8 @@ const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
 //const JsonServerpic = require('./ServerpicJson.js');
 //const oJson = JsonServerpic.GetJson();
 //const cPathVSCode = oJson.directorios[0].trabajo.dirtrabajo;
+
+
 /**************************
 * Funcion que crea el snipet ESP32Lib
 * Crea ESP32Lib para introcudir las librerias de ES32 en Serverpic.h
@@ -45,7 +44,7 @@ const cPathExtension = `${cUsuario}\\.vscode\\extensions\\serverpic`
     }
     IncludeESP32LibTexto =  aLineas.join('\n');  
     var cSnippet = "\"ESP32Lib\": {"+'\n';
-    cSnippet = cSnippet +"  \"prefix\": \"ESP32Lib\","+'\n';
+    cSnippet = cSnippet +"  \"prefix\": \"LibESP32\","+'\n';
     cSnippet = cSnippet +"  \"body\":["+'\n';
     cSnippet = cSnippet + IncludeESP32LibTexto+'\n';
     cSnippet = cSnippet + " ],"+'\n';
@@ -77,7 +76,7 @@ async function Crea_ESP8266Lib()
     }
     IncludeESP8266LibTexto =  aLineas.join('\n');  
     var cSnippet = "\"ESP8266Lib\": {"+'\n';
-    cSnippet = cSnippet +"  \"prefix\": \"ESP8266Lib\","+'\n';
+    cSnippet = cSnippet +"  \"prefix\": \"LibESP8266\","+'\n';
     cSnippet = cSnippet +"  \"body\":["+'\n';
     cSnippet = cSnippet + IncludeESP8266LibTexto+'\n';
     cSnippet = cSnippet + " ],"+'\n';
@@ -109,7 +108,7 @@ async function Crea_LORA32Lib()
     }
     IncludeHeltecesp32LibTexto =  aLineas.join('\n');  
     var cSnippet = "\"LORA32Lib\": {"+'\n';
-    cSnippet = cSnippet +"  \"prefix\": \"LORA32Lib\","+'\n';
+    cSnippet = cSnippet +"  \"prefix\": \"LibLORA32\","+'\n';
     cSnippet = cSnippet +"  \"body\":["+'\n';
     cSnippet = cSnippet + IncludeHeltecesp32LibTexto+'\n';
     cSnippet = cSnippet + " ],"+'\n';
@@ -119,14 +118,52 @@ async function Crea_LORA32Lib()
     return (cSnippet);   
 
 }
+/**************************
+* Funcion que crea el snipet OLEDDisplayInit
+* Crea DisplayInit() para inicilaizar lka pantalla OLED
+*
+* @return Retorna elcodigo del snippet
+*/
+async function DisplaySSD1306Init()
+{
+    var cSnippet = "\"OLED\": {"+'\n';
+    cSnippet = cSnippet +"  \"prefix\": \"OLEDInit\","+'\n';
+    cSnippet = cSnippet +"  \"body\":["+'\n';
+    cSnippet = cSnippet +" \"    /* FUncion que inicializa el display OLED \","+'\n';
+    cSnippet = cSnippet +" \"    */ \","+'\n'; 
+    cSnippet = cSnippet +" \"    void DisplayInit(void) \","+'\n';
+    cSnippet = cSnippet +" \"    { \","+'\n';
+    cSnippet = cSnippet +" \"        if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) \","+'\n'; 
+    cSnippet = cSnippet +" \"        { \","+'\n';
+    cSnippet = cSnippet +" \"            Serial.println('Fallo inicializando comunicacion con  OLED');  \","+'\n';
+    cSnippet = cSnippet +" \"        } else {\","+'\n';
+    cSnippet = cSnippet +" \"            Serial.println('Iniciada la comunicacion con OLED'); \","+'\n';
+    cSnippet = cSnippet +" \"            /* Limpia el display y configura la fuente */ \","+'\n';
+    cSnippet = cSnippet +" \"            display.clearDisplay(); \","+'\n';
+    cSnippet = cSnippet +" \"            display.setTextSize(1); \","+'\n';
+    cSnippet = cSnippet +" \"            display.setTextColor(WHITE); \","+'\n';
+    cSnippet = cSnippet +" \"        } \","+'\n';
+    cSnippet = cSnippet +" \"    }  \","+'\n';   
+    cSnippet = cSnippet + " ],"+'\n';
+    cSnippet = cSnippet + "\"description\": \"Funcion para inicializar pantalla OLED SSD1306\""+'\n';
+    cSnippet = cSnippet +"}";
+
+    return (cSnippet);   
+
+}
 exports.CreaSnippets= async function()
 {
+    // Cre4ar fichero .vscode/Serverpic.code-snippet para dejar el contenido
+    //https://code.visualstudio.com/docs/editor/userdefinedsnippets
     var cSnippet = "{"+'\n';
     cSnippet = cSnippet + await Crea_ESP32Lib();
     cSnippet = cSnippet + ","+'\n';
     cSnippet = cSnippet + await Crea_ESP8266Lib();
     cSnippet = cSnippet + ","+'\n';
     cSnippet = cSnippet + await Crea_LORA32Lib();
+    cSnippet = cSnippet + ","+'\n';
+    cSnippet = cSnippet + await DisplaySSD1306Init();
     cSnippet = '\n'+cSnippet + "}"+'\n';
+
     console.log(cSnippet);
 }
